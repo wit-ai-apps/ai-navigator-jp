@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【管理者用】AIポータル管理パネル</title>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // なべちょうさんのFirebase接続情報
+        const firebaseConfig = {
+            apiKey: "AIzaSyC990U7XauADarvkUw-WDM7_NMNssp6x2U",
+            authDomain: "ai-navigator-jp.firebaseapp.com",
+            projectId: "ai-navigator-jp",
+            storageBucket: "ai-navigator-jp.appspot.com"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // 保存処理
+        window.saveData = async () => {
+            const btn = document.getElementById('saveBtn');
+            btn.disabled = true; btn.innerText = "保存中...";
+            try {
+                await addDoc(collection(db, "tools"), {
+                    name: document.getElementById('name').value,
+                    category: document.getElementById('cat').value,
+                    rank: document.getElementById('rank').value,
+                    desc: document.getElementById('desc').value,
+                    url: document.getElementById('url').value,
+                    aff_url: document.getElementById('aff_url').value,
+                    openrouter_id: document.getElementById('or_id').value,
+                    price: document.getElementById('price').value,
+                    timestamp: serverTimestamp()
+                });
+                alert("保存完了！サイトに反映されました。");
+                document.getElementById('aiForm').reset();
+            } catch (e) { alert("エラー: " + e.message); }
+            btn.disabled = false; btn.innerText = "データベースに保存";
+        };
+    </script>
+    <style>
+        body { font-family: sans-serif; background: #1e293b; color: white; padding: 20px; }
+        .form-box { max-width: 500px; margin: 0 auto; background: #334155; padding: 20px; border-radius: 12px; }
+        input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: none; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        label { font-size: 0.8rem; color: #cbd5e1; }
+    </style>
+</head>
+<body>
+    <div class="form-box">
+        <h2>AIツール新規登録</h2>
+        <form id="aiForm" onsubmit="event.preventDefault(); saveData();">
+            <label>AIツール名</label>
+            <input type="text" id="name" placeholder="例: ChatGPT (Plus)" required>
+            
+            <label>表示優先度 (S=金枠/最上位, A=通常)</label>
+            <select id="rank"><option value="A">A (通常)</option><option value="S">S (PR/金枠)</option></select>
+
+            <label>カテゴリ</label>
+            <select id="cat">
+                <option value="対話">対話・思考</option>
+                <option value="制作">画像・映像</option>
+                <option value="仕事">ビジネス・効率化</option>
+                <option value="開発">開発・理数</option>
+            </select>
+
+            <label>3行説明文 (120文字程度)</label>
+            <textarea id="desc" rows="4" placeholder="AIの特徴、用途を3行で..." required></textarea>
+
+            <label>公式サイトURL (Favicon取得用)</label>
+            <input type="url" id="url" placeholder="https://..." required>
+
+            <label>アフィリエイトURL (空なら公式サイトURLを使用)</label>
+            <input type="url" id="aff_url" placeholder="https://...">
+
+            <label>OpenRouter ID (任意)</label>
+            <input type="text" id="or_id" placeholder="例: openai/gpt-4o">
+
+            <label>料金目安</label>
+            <input type="text" id="price" placeholder="例: 無料〜$20">
+
+            <button type="submit" id="saveBtn">データベースに保存</button>
+        </form>
+    </div>
+</body>
+</html>
