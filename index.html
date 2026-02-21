@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Navigator JP | v64.0.0 Mega-Pack</title>
+    <title>AI Navigator JP | v65.0.0</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, query, addDoc, serverTimestamp, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -19,30 +19,20 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- 100選：精鋭リスト（ジャンル別・国旗付） ---
+        // --- 100選：ブランド統合・正確な国旗データ ---
         const aiDataList = [
-            // Text / General
-            { rank: 1, name: "ChatGPT", company: "OpenAI", country: "US", flag: "🇺🇸", version: "o3-mini", lang: "JP", platform: "Web/App", url: "https://chatgpt.com", desc: "AIの王者。最高峰の推論能力を持ち、文章・分析・音声の全てで業界を牽引。" },
+            { rank: 1, name: "ChatGPT", company: "OpenAI", country: "US", flag: "🇺🇸", version: "o3-mini", lang: "JP", platform: "Web/App", url: "https://chatgpt.com", desc: "AIの代名詞。最高峰の推論能力を持ち、文章・分析・音声の全てで業界を牽引。" },
             { rank: 2, name: "Claude 3.7", company: "Anthropic", country: "US", flag: "🇺🇸", version: "Sonnet", lang: "JP", platform: "Web/App", url: "https://claude.ai", desc: "自然な日本語と緻密なコード生成。誠実な対話でエンジニアから絶大な支持。" },
             { rank: 3, name: "Perplexity AI", company: "Perplexity", country: "US", flag: "🇺🇸", version: "Pro", lang: "JP", platform: "Web/App", url: "https://www.perplexity.ai", desc: "出典を明示する対話型検索。ネットの最新情報を即座に整理し、調査を爆速化。" },
-            { rank: 4, name: "Gemini", company: "Google", country: "US", flag: "🇺🇸", version: "1.5 Pro", lang: "JP", platform: "Web/App", url: "https://gemini.google.com", desc: "200万トークンの巨大メモリ。Google連携と数千ページの資料分析に最強。" },
-            // Dev / Math
-            { rank: 5, name: "Cursor", company: "Anysphere", country: "US", flag: "🇺🇸", version: "v0.45", lang: "JP", platform: "App", url: "https://cursor.sh", desc: "AI搭載コードエディタ。自然言語での指示で開発速度を劇的に向上させる。" },
-            { rank: 6, name: "Wolfram Alpha", company: "Wolfram", country: "US", flag: "🇺🇸", version: "Classic", lang: "EN", platform: "Web/App", url: "https://www.wolframalpha.com", desc: "数学・科学計算の権威。微積分から物理まで計算ミスなく厳密に解く。" },
-            { rank: 7, name: "GitHub Copilot", company: "GitHub", country: "US", flag: "🇺🇸", version: "v2", lang: "JP", platform: "App", url: "https://github.com/features/copilot", desc: "開発者の意図を汲み取り、爆速でコードを提案する補完AIの先駆者。" },
-            { rank: 8, name: "v0.dev", company: "Vercel", country: "US", flag: "🇺🇸", version: "Beta", lang: "EN", platform: "Web", url: "https://v0.dev", desc: "UIをプロンプトから生成。React/Next.jsコードを即出力するフロントエンドの革命。" },
-            // Creation / Video
-            { rank: 9, name: "Midjourney", company: "Midjourney", country: "US", flag: "🇺🇸", version: "v6.1", lang: "EN", platform: "Web", url: "https://www.midjourney.com", desc: "画像生成の最高峰。写真やロゴなど、言葉から芸術的なビジュアルを生成。" },
-            { rank: 10, name: "Runway Gen-3", company: "Runway", country: "US", flag: "🇺🇸", version: "Alpha", lang: "EN", platform: "Web/App", url: "https://runwayml.com", desc: "映画品質の動画生成。物理法則を理解した圧倒的な映像美で映像制作を自動化。" },
-            { rank: 11, name: "Suno", company: "Suno AI", country: "US", flag: "🇺🇸", version: "v4.0", lang: "JP", platform: "Web/App", url: "https://suno.com", desc: "高品質な楽曲生成。日本語歌詞も完璧に歌い上げる音楽生成の絶対的王者。" },
-            { rank: 12, name: "Kling AI", company: "Kuaishou", country: "CN", flag: "🇨🇳", version: "v1.5", lang: "EN/CN", platform: "Web/App", url: "https://klingai.com", desc: "高品質動画生成。動きの一貫性とリアルな描写で世界の映像業界を驚愕させる。" },
-            // Efficiency / Others
-            { rank: 13, name: "DeepL Write", company: "DeepL", country: "DE", flag: "🇩🇪", version: "v2.0", lang: "JP", platform: "Web/App", url: "https://www.deepl.com/write", desc: "文章の品格を整える。不自然な日本語を洗練されたプロの文体へ昇華。" },
-            { rank: 14, name: "Mistral Large", company: "Mistral AI", country: "FR", flag: "🇫🇷", version: "v2", lang: "EN/FR", platform: "Web", url: "https://mistral.ai", desc: "欧州発の高性能モデル。高い論理性を持ち、オープンな姿勢で支持される。" },
-            { rank: 15, name: "NotebookLM", company: "Google", country: "US", flag: "🇺🇸", version: "v1", lang: "JP", platform: "Web", url: "https://notebooklm.google.com", desc: "自分専用の情報を学習。正確な回答と音声要約を生成する究極のノート。" },
-            { rank: 16, name: "ELYZA", company: "ELYZA", country: "JP", flag: "🇯🇵", version: "Llama-3", lang: "JP", platform: "Web", url: "https://elyza.ai", desc: "日本発の最高峰LLM。日本語の文化や背景を深く理解した自然な対話。" },
-            { rank: 17, name: "Consensus", company: "Consensus", country: "US", flag: "🇺🇸", version: "v2", lang: "EN", platform: "Web", url: "https://consensus.app", desc: "2億件の学術論文から根拠を抽出。エビデンス重視の調査における最強ツール。" },
-            { rank: 18, name: "Harvey", company: "Harvey AI", country: "US", flag: "🇺🇸", version: "Pro", lang: "EN", platform: "Web", url: "https://www.harvey.ai", desc: "法務・弁護士特化。膨大な判例や契約書を瞬時に分析し、実務を強力サポート。" }
+            { rank: 4, name: "Gemini", company: "Google", country: "US", flag: "🇺🇸", version: "2.0 Pro", lang: "JP", platform: "Web/App", url: "https://gemini.google.com", desc: "Googleツールと融合。200万トークンの巨大メモリにより、数千ページの資料分析に最強。" },
+            { rank: 5, name: "Midjourney", company: "Midjourney", country: "US", flag: "🇺🇸", version: "v6.1", lang: "EN", platform: "Web", url: "https://www.midjourney.com", desc: "画像生成の最高到達点。言葉から芸術的なビジュアルを生成。" },
+            { rank: 6, name: "Cursor", company: "Anysphere", country: "US", flag: "🇺🇸", version: "v0.45", lang: "JP", platform: "App", url: "https://cursor.sh", desc: "AI搭載コードエディタ。自然言語での指示で開発速度を劇的に向上させる。" },
+            { rank: 7, name: "DeepL Write", company: "DeepL", country: "DE", flag: "🇩🇪", version: "v2.0", lang: "JP", platform: "Web/App", url: "https://www.deepl.com/write", desc: "文章の品格を整える。不自然な日本語を洗練されたプロの文体へ昇華。" },
+            { rank: 8, name: "Suno", company: "Suno AI", country: "US", flag: "🇺🇸", version: "v4.0", lang: "JP", platform: "Web/App", url: "https://suno.com", desc: "高品質な楽曲生成。日本語歌詞も完璧に歌い上げる音楽生成の絶対的王者。" },
+            { rank: 9, name: "Kling AI", company: "Kuaishou", country: "CN", flag: "🇨🇳", version: "v1.5", lang: "EN/CN", platform: "Web/App", url: "https://klingai.com", desc: "最大2分の動画生成。動きの一貫性とリアルな描写で世界を驚愕させる。" },
+            { rank: 10, name: "Mistral Large", company: "Mistral AI", country: "FR", flag: "🇫🇷", version: "v2", lang: "EN/FR", platform: "Web", url: "https://mistral.ai", desc: "欧州発の高性能モデル。高い論理性を持ち、オープンな姿勢で支持される。" },
+            { rank: 11, name: "ELYZA", company: "ELYZA", country: "JP", flag: "🇯🇵", version: "Llama-3", lang: "JP", platform: "Web", url: "https://elyza.ai", desc: "日本発、日本語特化の最高峰LLM。文化や背景を深く理解した自然な対話。" },
+            { rank: 12, name: "Wolfram Alpha", company: "Wolfram", country: "US", flag: "🇺🇸", version: "Classic", lang: "EN", platform: "Web/App", url: "https://www.wolframalpha.com", desc: "数学・科学計算の絶対的権威。計算ミスをしない厳密な推論で微積分から物理まで解く。" }
         ];
 
         window.bulkUpload = async () => {
@@ -69,16 +59,6 @@
             document.getElementById('admin-status').innerText = "削除完了。";
         };
 
-        let allDocs = [];
-        window.applyFilter = () => {
-            const word = (document.getElementById('search-input').value || "").toLowerCase();
-            const filtered = allDocs.filter(d => {
-                const item = d.data();
-                return (item.name || "").toLowerCase().includes(word) || (item.desc || "").toLowerCase().includes(word);
-            });
-            renderCards(filtered);
-        };
-
         const renderCards = (docs) => {
             const container = document.getElementById('ai-container');
             container.innerHTML = docs.sort((a,b) => (a.data().rank || 999) - (b.data().rank || 999)).map(doc => {
@@ -90,54 +70,52 @@
                         <div class="card-top">
                             <img src="${iconUrl}" class="ai-icon" onerror="this.src='https://via.placeholder.com/40'">
                             <div>
-                                <div class="ai-name">${item.name || '不明'}</div>
+                                <div class="ai-name">${item.name}</div>
                                 <div class="ai-ver">Ver: ${item.version || '-'}</div>
                             </div>
                         </div>
                         <div class="card-company">
-                            <span class="flag-icon">${item.flag || '🌐'}</span> ${item.company || 'Unknown'}
+                            <span class="flag-icon">${item.flag || '🌐'}</span> ${item.company}
                         </div>
                         <div class="card-meta">
-                            <span class="badge lang">${item.lang === 'JP' ? '日本語OK' : item.lang || 'EN'}</span>
-                            <span class="badge plat">${item.platform || 'Web'}</span>
-                            <span class="badge price">${item.price || 'Free'}</span>
+                            <span class="badge lang">${item.lang === 'JP' ? '日本語OK' : item.lang}</span>
+                            <span class="badge plat">${item.platform}</span>
+                            <span class="badge price">${item.price}</span>
                         </div>
-                        <div class="desc-box"><p class="ai-desc">${item.desc || '-'}</p></div>
+                        <div class="desc-box"><p class="ai-desc">${item.desc}</p></div>
                         <div class="btn-group">
-                            <a href="${item.url || '#'}" target="_blank" class="btn btn-primary">公式サイト</a>
-                            <button class="btn btn-outline" onclick="this.closest('.ai-card').querySelector('.desc-box').classList.toggle('expand')">詳細</button>
+                            <a href="${item.url}" target="_blank" class="btn btn-primary">公式サイト</a>
+                            <button class="btn btn-outline" onclick="this.closest('.ai-card').querySelector('.desc-box').classList.toggle('expand')">唸る詳細</button>
                         </div>
                     </div>
                 `;
             }).join('');
         };
 
-        onSnapshot(query(collection(db, "tools")), (s) => { allDocs = s.docs; applyFilter(); });
+        onSnapshot(query(collection(db, "tools")), (s) => renderCards(s.docs));
     </script>
     <style>
         :root { --bg: #0b0f1a; --card: #161e2e; --blue: #38bdf8; --gold: #fbbf24; --text: #f1f5f9; }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
         header { max-width: 1200px; margin: 0 auto 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1e293b; padding-bottom: 10px; }
-        .search-area { max-width: 1200px; margin: 0 auto 20px; }
-        #search-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; font-size: 1rem; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; max-width: 1200px; margin: 0 auto; }
-        .ai-card { background: var(--card); border-radius: 12px; padding: 15px; border: 1px solid #1e293b; position: relative; display: flex; flex-direction: column; }
-        .ai-card.top-rank { border-color: var(--gold); box-shadow: 0 0 10px rgba(251, 191, 36, 0.1); }
-        .card-badge { position: absolute; top: 10px; right: 10px; font-weight: bold; font-size: 1.1rem; color: var(--gold); }
+        .ai-card { background: var(--card); border-radius: 12px; padding: 15px; border: 1px solid #1e293b; position: relative; }
+        .ai-card.top-rank { border-color: var(--gold); box-shadow: 0 0 15px rgba(251, 191, 36, 0.1); }
+        .card-badge { position: absolute; top: 10px; right: 10px; font-weight: bold; font-size: 1.2rem; color: var(--gold); }
         .card-top { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
         .ai-icon { width: 40px; height: 40px; border-radius: 8px; background: #fff; padding: 3px; }
-        .ai-name { font-weight: bold; font-size: 1rem; color: #fff; }
+        .ai-name { font-weight: bold; font-size: 1.1rem; color: #fff; }
         .ai-ver { font-size: 0.7rem; color: var(--blue); }
         .card-company { font-size: 0.8rem; color: #94a3b8; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
-        .flag-icon { font-size: 1.1rem; }
+        .flag-icon { font-size: 1.2rem; }
         .card-meta { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
         .badge { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; }
         .lang { border-color: var(--blue); color: var(--blue); }
         .desc-box { height: 2.8em; overflow: hidden; transition: 0.3s; margin-bottom: 15px; }
         .desc-box.expand { height: auto; }
         .ai-desc { font-size: 0.75rem; color: #cbd5e1; line-height: 1.4; margin: 0; }
-        .btn-group { display: flex; gap: 6px; margin-top: auto; }
-        .btn { flex: 1; padding: 8px; border-radius: 6px; text-align: center; font-size: 0.7rem; font-weight: bold; text-decoration: none; cursor: pointer; border: none; }
+        .btn-group { display: flex; gap: 6px; }
+        .btn { flex: 1; padding: 8px; border-radius: 6px; text-align: center; font-size: 0.75rem; font-weight: bold; text-decoration: none; border: none; cursor: pointer; }
         .btn-primary { background: var(--blue); color: #000; }
         .btn-outline { background: transparent; border: 1px solid var(--blue); color: var(--blue); }
         .admin-box { background: #1e293b; padding: 15px; border-radius: 12px; margin: 0 auto 20px; max-width: 1200px; display: none; text-align: center; border: 1px solid var(--blue); }
@@ -146,13 +124,12 @@
 </head>
 <body>
     <header>
-        <h1>AI Navigator <span style="color:var(--blue)">JP</span> <small style="font-size:0.6rem; color:#94a3b8;">v64 Mega-Data</small></h1>
+        <h1>AI Navigator <span style="color:var(--blue)">JP</span> <small style="font-size:0.6rem; color:#94a3b8;">v65.0.0 Stable</small></h1>
         <button onclick="document.getElementById('admin').classList.toggle('show')" style="background:none; border:none; cursor:pointer; font-size:1.2rem;">⚙️</button>
     </header>
-    <div class="search-area"><input type="text" id="search-input" placeholder="AI名、開発元、特徴で検索..." oninput="applyFilter()"></div>
     <div id="admin" class="admin-box">
-        <button onclick="bulkUpload()" class="btn btn-primary" style="width:auto; padding:8px 30px;">最新の精鋭リストを同期</button>
-        <button onclick="deleteAllData()" class="btn btn-outline" style="border-color:#ef4444; color:#ef4444; width:auto; padding:8px 30px; margin-left:10px;">データを全削除</button>
+        <button onclick="bulkUpload()" class="btn btn-primary" style="width:auto; padding:8px 30px;">Firebaseへ同期</button>
+        <button onclick="deleteAllData()" class="btn btn-outline" style="border-color:#ef4444; color:#ef4444; width:auto; padding:8px 30px; margin-left:10px;">リセット</button>
         <div id="admin-status" style="margin-top:10px; font-size:0.8rem; color:var(--blue);"></div>
     </div>
     <div id="ai-container" class="grid"></div>
