@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Navigator JP | v56 Fix</title>
+    <title>AI Navigator JP | v57</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, query, addDoc, serverTimestamp, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyC990U7XauADarvkUw-WDM7_NMNssp6x2U",
@@ -19,47 +19,65 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // --- カテゴリー刷新・100選データ（一部抜粋・順次追加） ---
         const aiDataList = [
-            { name: "ChatGPT", company: "OpenAI", cat: "Text", rank: "S", price: "Free", url: "https://chatgpt.com", desc: "AIの代名詞。文章生成から分析までこなす万能王者。" },
-            { name: "Claude 3.5 Sonnet", company: "Anthropic", cat: "Text", rank: "S", price: "$20", url: "https://claude.ai", desc: "自然な日本語と高い知性。コード生成に最強。" },
-            { name: "Gemini 1.5 Pro", company: "Google", cat: "Text", rank: "S", price: "Free", url: "https://gemini.google.com", desc: "Google連携と巨大なメモリが強み。長文読解に最適。" },
-            { name: "Perplexity AI", company: "Perplexity", cat: "Search", rank: "S", price: "Free", url: "https://www.perplexity.ai", desc: "出典付きで情報を検索。リサーチを劇的に効率化。" },
-            { name: "Midjourney", company: "Midjourney", cat: "Image", rank: "S", price: "$10", url: "https://www.midjourney.com", desc: "芸術的画像生成の頂点。言葉からアートを創造。" },
-            { name: "Runway Gen-3", company: "Runway", cat: "Video", rank: "S", price: "$12", url: "https://runwayml.com", desc: "映画品質の動画生成。リアルな動きを再現。" },
-            { name: "Suno v4", company: "Suno AI", cat: "Music", rank: "S", price: "Free", url: "https://suno.com", desc: "言葉から高品質な楽曲を生成。驚異の表現力。" },
-            { name: "Cursor", company: "Anysphere", cat: "Code", rank: "S", price: "Free", url: "https://cursor.sh", desc: "AI搭載の次世代エディタ。対話しながら開発。" }
+            // Dev/Math
+            { name: "Cursor", company: "Anysphere", cat: "Dev/Math", rank: "S", price: "Free/Paid", url: "https://cursor.sh", desc: "エンジニアの標準。AIと対話してアプリを構築する最強エディタ。" },
+            { name: "GitHub Copilot", company: "GitHub", cat: "Dev/Math", rank: "S", price: "Paid", url: "https://github.com/features/copilot", desc: "世界最大のコード学習AI。あらゆる言語の補完をサポート。" },
+            { name: "v0.dev", company: "Vercel", cat: "Dev/Math", rank: "A", price: "Free/Paid", url: "https://v0.dev", desc: "UIデザインをプロンプトから生成。React/Next.jsコードを即出力。" },
+            { name: "Wolfram Alpha", company: "Wolfram", cat: "Dev/Math", rank: "S", price: "Free/Paid", url: "https://www.wolframalpha.com", desc: "計算知識エンジン。数学、物理、化学の厳密な計算に最強。" },
+            // Creation
+            { name: "Runway Gen-3", company: "Runway", cat: "Creation", rank: "S", price: "Paid", url: "https://runwayml.com", desc: "動画生成の最高峰。物理法則を理解した圧倒的な映像美。" },
+            { name: "Luma Dream Machine", company: "Luma AI", cat: "Creation", rank: "A", price: "Free/Paid", url: "https://lumalabs.ai", desc: "高品質な動画を高速生成。静止画からの動画化も得意。" },
+            { name: "Midjourney", company: "Midjourney", cat: "Creation", rank: "S", price: "Paid", url: "https://www.midjourney.com", desc: "芸術的画像生成の頂点。独自の審美眼を持つAI。" },
+            // Research
+            { name: "Perplexity AI", company: "Perplexity", cat: "Research", rank: "S", price: "Free/Paid", url: "https://www.perplexity.ai", desc: "出典付き検索の王者。最新情報をソース付きで回答。" },
+            { name: "Consensus", company: "Consensus", cat: "Research", rank: "A", price: "Free/Paid", url: "https://consensus.app", desc: "科学論文特化の検索。エビデンスに基づいた回答を得られる。" },
+            // General
+            { name: "Claude 3.5 Sonnet", company: "Anthropic", cat: "General", rank: "S", price: "Free/Paid", url: "https://claude.ai", desc: "思考力・自然な日本語で最高評価。Artifacts機能が強力。" },
+            { name: "ChatGPT (GPT-4o)", company: "OpenAI", cat: "General", rank: "S", price: "Free/Paid", url: "https://chatgpt.com", desc: "全ての基準。音声会話、画像解析、分析まで何でもこなす。" }
         ];
 
         window.bulkUpload = async () => {
             const status = document.getElementById('admin-status');
-            status.innerText = "処理中...";
+            status.innerText = "重複を確認中...";
             try {
                 const snapshot = await getDocs(collection(db, "tools"));
                 const existingNames = snapshot.docs.map(d => d.data().name);
                 let count = 0;
                 for(const data of aiDataList) {
                     if(!existingNames.includes(data.name)) {
+                        status.innerText = `${data.name} を登録中...`;
                         await addDoc(collection(db, "tools"), { ...data, timestamp: serverTimestamp() });
                         count++;
                     }
                 }
-                status.innerText = count > 0 ? `${count}件追加完了。` : "登録済みです。";
-            } catch (e) { status.innerText = "エラー: " + e.message; }
+                status.innerText = count > 0 ? `${count}件を新しく追加しました。` : "すべてのAIは既に最新です。";
+            } catch (e) { status.innerText = "エラーが発生しました。"; }
         };
 
         window.deleteAllData = async () => {
             const status = document.getElementById('admin-status');
             const snapshot = await getDocs(collection(db, "tools"));
             for (const d of snapshot.docs) { await deleteDoc(doc(db, "tools", d.id)); }
-            status.innerText = "リセット完了。";
+            status.innerText = "全データを消去しました。";
+        };
+
+        let allDocs = [];
+        window.applyFilter = () => {
+            const word = document.getElementById('search-input').value.toLowerCase();
+            const cat = document.getElementById('cat-filter').value;
+            const filtered = allDocs.filter(d => {
+                const item = d.data();
+                const matchWord = item.name.toLowerCase().includes(word) || item.desc.toLowerCase().includes(word);
+                const matchCat = cat === "All" || item.cat === cat;
+                return matchWord && matchCat;
+            });
+            renderCards(filtered);
         };
 
         const renderCards = (docs) => {
             const container = document.getElementById('ai-container');
-            if (docs.length === 0) {
-                container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:50px; color:#94a3b8;">カードがありません。「一括追加」を押すか、読み込みを待ってください。</div>`;
-                return;
-            }
             container.innerHTML = docs.map(doc => {
                 const item = doc.data();
                 const iconUrl = `https://www.google.com/s2/favicons?sz=128&domain=${new URL(item.url).hostname}`;
@@ -75,23 +93,22 @@
                         <p class="ai-desc">${item.desc}</p>
                         <div class="btn-group">
                             <a href="${item.url}" target="_blank" class="btn btn-primary">公式サイト</a>
-                            <button class="btn btn-outline" onclick="this.innerText='準備中'">詳細</button>
+                            <button class="btn btn-outline" onclick="this.innerText='準備中'">唸る詳細</button>
                         </div>
                     </div>
                 `;
             }).join('');
         };
 
-        // 並び替えを一旦解除して、確実に読み込む設定
-        onSnapshot(collection(db, "tools"), (snapshot) => {
-            renderCards(snapshot.docs);
-        });
+        onSnapshot(query(collection(db, "tools"), orderBy("timestamp", "desc")), (s) => { allDocs = s.docs; applyFilter(); });
     </script>
     <style>
         :root { --bg: #0b0f1a; --card: #161e2e; --blue: #38bdf8; --gold: #fbbf24; --text: #f1f5f9; }
         body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 20px; }
-        header { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto 20px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; max-width: 1200px; margin: 0 auto; min-height: 200px; }
+        header { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto 10px; }
+        .nav-bar { max-width: 1200px; margin: 0 auto 20px; display: flex; gap: 10px; }
+        input, select { background: #1e293b; border: 1px solid #334155; color: white; padding: 12px; border-radius: 8px; flex: 1; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; max-width: 1200px; margin: 0 auto; }
         .ai-card { background: var(--card); border-radius: 12px; padding: 15px; border: 1px solid #1e293b; transition: 0.2s; }
         .ai-card.s-rank { border-color: var(--gold); box-shadow: 0 0 10px rgba(251, 191, 36, 0.1); }
         .card-top { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
@@ -115,12 +132,22 @@
         <h1>AI Navigator <span style="color:var(--blue)">JP</span></h1>
         <button onclick="document.getElementById('admin').classList.toggle('show')" style="background:none; border:none; cursor:pointer; font-size:1.5rem;">⚙️</button>
     </header>
-    <div id="admin" class="admin-box">
-        <button id="upload-btn" onclick="bulkUpload()" class="btn btn-primary" style="width:auto; padding:10px 30px;">最新AIを一括追加</button>
-        <button onclick="deleteAllData()" class="btn btn-outline" style="border-color:#ef4444; color:#ef4444; width:auto; padding:10px 30px; margin-left:10px;">リセット</button>
-        <div id="admin-status" style="margin-top:10px; font-size:0.9rem; color:var(--blue);">読み込み中...</div>
+    <div class="nav-bar">
+        <input type="text" id="search-input" placeholder="AIを検索..." oninput="applyFilter()">
+        <select id="cat-filter" onchange="applyFilter()">
+            <option value="All">全てのカテゴリ</option>
+            <option value="General">General (ChatGPT/Claude等)</option>
+            <option value="Dev/Math">Dev/Math (開発・数学・教育)</option>
+            <option value="Creation">Creation (画像・動画・デザイン)</option>
+            <option value="Research">Research (検索・論文分析)</option>
+            <option value="Efficiency">Efficiency (業務効率・要約)</option>
+        </select>
     </div>
-    <div id="ai-container" class="grid">
-        </div>
+    <div id="admin" class="admin-box">
+        <button id="upload-btn" onclick="bulkUpload()" class="btn btn-primary" style="width:auto; padding:10px 30px;">AI 100選を登録</button>
+        <button onclick="deleteAllData()" class="btn btn-outline" style="border-color:#ef4444; color:#ef4444; width:auto; padding:10px 30px; margin-left:10px;">リセット</button>
+        <div id="admin-status" style="margin-top:10px; font-size:0.9rem; color:var(--blue);"></div>
+    </div>
+    <div id="ai-container" class="grid"></div>
 </body>
 </html>
