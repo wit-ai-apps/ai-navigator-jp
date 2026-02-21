@@ -3,176 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Navigator Asia - 2026 Global Directory</title>
+    <title>AI Navigator JP - 世界のAI 100選</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            --primary: #0f172a; --accent: #3b82f6; --pro-bg: #0b0f19;
-            --lite-bg: #f8fafc; --success: #10b981; --warning: #f59e0b;
+            --bg: #0f172a; --card-bg: #1e293b; --accent: #3b82f6; --text: #f1f5f9;
         }
-        body { font-family: 'Inter', sans-serif; transition: 0.3s; margin: 0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow-x: hidden; }
         
-        /* モード切替 */
-        body.lite-mode { background: var(--lite-bg); color: #1e293b; }
-        body.pro-mode { background: var(--pro-bg); color: #e2e8f0; }
+        /* 圧倒的なヘッダー */
+        header { padding: 40px 20px; text-align: center; background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); border-bottom: 1px solid #334155; }
+        .search-box { width: 100%; max-width: 600px; margin: 20px auto; position: relative; }
+        .search-box input { width: 100%; padding: 15px 50px; border-radius: 30px; border: none; background: #334155; color: white; font-size: 1.1rem; }
+        .search-box i { position: absolute; left: 20px; top: 18px; color: var(--accent); }
 
-        .container { max-width: 1300px; margin: 0 auto; padding: 20px; }
-
-        /* ヘッダー */
-        header { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-bottom: 1px solid #cbd5e1; }
-        .logo { font-size: 1.8rem; font-weight: 800; letter-spacing: -1px; }
-        .mode-switcher { background: #334155; padding: 5px; border-radius: 30px; display: flex; cursor: pointer; }
-        .mode-btn { padding: 8px 20px; border-radius: 25px; font-size: 0.9rem; transition: 0.3s; color: #94a3b8; }
-        .active-mode { background: var(--accent); color: white; }
-
-        /* ランキング/カタログ */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 25px; margin-top: 40px; }
+        /* 100個並べるグリッド */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; padding: 20px; }
         
-        /* AIカード */
+        /* 密度を高めたカード */
         .ai-card { 
-            border-radius: 20px; padding: 24px; position: relative;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(255,255,255,0.8); backdrop-filter: blur(10px);
+            background: var(--card-bg); border-radius: 12px; padding: 15px; border: 1px solid #334155;
+            cursor: pointer; transition: 0.2s; position: relative;
         }
-        .pro-mode .ai-card { background: #1e293b; color: white; }
+        .ai-card:hover { transform: translateY(-5px); border-color: var(--accent); box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+        .ai-card h3 { margin: 0 0 8px 0; font-size: 1.1rem; color: var(--accent); }
+        .ai-card .summary { font-size: 0.85rem; line-height: 1.4; color: #94a3b8; height: 3.6em; overflow: hidden; }
+        .ai-card .tags { margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap; }
+        .tag { font-size: 0.7rem; background: #0f172a; padding: 2px 8px; border-radius: 4px; border: 1px solid #334155; }
 
-        .badge { position: absolute; top: 15px; right: 15px; background: var(--success); color: white; padding: 5px 12px; border-radius: 5px; font-size: 0.75rem; font-weight: bold; }
+        /* モーダル（詳細画面） */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: var(--card-bg); width: 90%; max-width: 800px; max-height: 90vh; border-radius: 20px; padding: 30px; overflow-y: auto; position: relative; }
+        .close-btn { position: absolute; top: 20px; right: 20px; font-size: 1.5rem; cursor: pointer; }
+
+        /* 親和性アイコン表示 */
+        .compatibility { display: flex; gap: 15px; margin: 20px 0; background: #0f172a; padding: 15px; border-radius: 10px; }
+        .comp-item { text-align: center; flex: 1; font-size: 0.8rem; }
+        .comp-item i { display: block; font-size: 1.2rem; margin-bottom: 5px; }
+        .status-ok { color: var(--success); }
         
-        .ai-icon { width: 50px; height: 50px; background: #eee; border-radius: 12px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
-
-        /* AI相互評価セクション */
-        .ai-critique { background: rgba(59, 130, 246, 0.1); padding: 15px; border-radius: 12px; margin: 15px 0; font-size: 0.85rem; border-left: 4px solid var(--accent); }
-        .ai-critique strong { color: var(--accent); display: block; margin-bottom: 5px; }
-
-        /* セキュリティ/性能（プロ用） */
-        .pro-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8rem; margin-top: 15px; }
-        .stat-item { background: rgba(0,0,0,0.05); padding: 8px; border-radius: 6px; }
-        .pro-mode .stat-item { background: rgba(255,255,255,0.05); }
-
-        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
-        .btn-main { flex: 1; text-align: center; padding: 12px; background: var(--accent); color: white; text-decoration: none; border-radius: 8px; font-weight: bold; }
-        .btn-sub { flex: 1; text-align: center; padding: 12px; background: #e2e8f0; color: #1e293b; text-decoration: none; border-radius: 8px; font-size: 0.9rem; }
+        /* おすすめラベル */
+        .hot-badge { position: absolute; top: -5px; right: -5px; background: #ef4444; font-size: 0.6rem; padding: 2px 8px; border-radius: 10px; z-index: 1; }
     </style>
 </head>
-<body class="lite-mode">
+<body>
 
-<div class="container">
-    <header>
-        <div class="logo"><i class="fas fa-brain"></i> AI Navigator <span style="color:var(--accent)">Asia</span></div>
-        <div class="mode-switcher" onclick="toggleMode()">
-            <div id="liteBtn" class="mode-btn active-mode">Lite (一般)</div>
-            <div id="proBtn" class="mode-btn">Pro (玄人)</div>
-        </div>
-    </header>
+<header>
+    <h1>AI Navigator <span style="color:var(--accent)">JP</span></h1>
+    <p>世界をリードするAI 100選・相互分析データベース</p>
+    <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="AIの名前、用途、特徴で検索..." onkeyup="filterAI()">
+    </div>
+</header>
 
-    <div style="text-align:center; margin: 40px 0;">
-        <h1 id="titleText">あなたに最適なAIを見つける</h1>
-        <p id="subTitle">世界100以上のAIを比較・分析・体験</p>
+<div class="grid" id="aiGrid">
     </div>
 
-    <div class="grid" id="aiContainer">
-        </div>
+<div id="aiModal" class="modal" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <span class="close-btn" onclick="document.getElementById('aiModal').style.display='none'">&times;</span>
+        <div id="modalBody"></div>
+    </div>
 </div>
 
 <script>
-    // 100個のAIデータベース（サンプル）
-    const aiDatabase = [
-        {
-            name: "ChatGPT (GPT-5.5)",
-            maker: "OpenAI",
-            cat: "総合・対話",
-            rank: "S",
-            security: "98/100",
-            lang: "◎ 日本語完璧",
-            liteDesc: "一番有名なAI。何でも相談に乗ってくれる万能なパートナーです。",
-            proDesc: "推論モデルo3を統合し、複雑な数学的証明やコード生成のハルシネーションを極限まで抑制。",
-            critique: "Claude評: 「論理性と多機能性は随一だが、人間味のある表現では私のほうが上だ」",
-            openRouter: true,
-            sponsored: true
-        },
-        {
-            name: "DeepSeek-R1",
-            maker: "DeepSeek",
-            cat: "思考・数学",
-            rank: "A+",
-            security: "85/100",
-            lang: "◯ 日本語対応",
-            liteDesc: "数学や難しい理屈にめちゃくちゃ強い、格安・爆速のAIです。",
-            proDesc: "Chain-of-Thought（思考の連鎖）を可視化。トークン単価がGPT-4の1/10以下でAPI開発に最適。",
-            critique: "GPT評: 「数学の解法速度は脅威。ただし、政治的な配慮が必要な回答には偏りが見られる」",
-            openRouter: true
-        },
-        {
-            name: "NotebookLM",
-            maker: "Google",
-            cat: "教育・解析",
-            rank: "S",
-            security: "95/100",
-            lang: "◎ 日本語完璧",
-            liteDesc: "自分の資料を読み込ませるだけで、その内容の専門家になってくれるAI。",
-            proDesc: "Gemini 1.5 Proの200万トークンウィンドウを活用。PDF、ソースコード等、複数ソースの統合解析が可能。",
-            critique: "Perplexity評: 「特定の資料に対する精密度は高いが、ネットの最新情報を拾う力は私に軍配が上がる」",
-            openRouter: false
-        }
+    // 100個に向けてデータを整理
+    const aiData = [
+        { id: 1, name: "ChatGPT (OpenAI)", cat: "万能型", sum: "AIの王者。最新の推論モデルo3を搭載し、数学・プログラミング・執筆などあらゆる分野で頂点の性能を誇る。", detail: "2026年最新アップデートにより、感情理解とマルチモーダル処理が飛躍的に向上。日本企業の8割が導入。API連携も強力。", critique: "Claude評:『機能の網羅性は敵わないが、文章の温かみではまだ私のほうが上だろう。』", word: "◎", ichi: "△", google: "◎", star: 5, tags: ["定番", "数学", "画像生成"] },
+        { id: 2, name: "Claude 3.5/4 (Anthropic)", cat: "思考型", sum: "人間に最も近い自然な日本語。長大なPDFや論文の読み込み能力に優れ、誤情報が極めて少ない。", detail: "Artifacts機能によるリアルタイムなアプリ生成が強力。教育現場での倫理的な対話にも最適。", critique: "GPT評:『論理の整合性と安全性へのこだわりは、開発者として尊敬に値する。』", word: "◎", ichi: "△", google: "◎", star: 5, tags: ["長文", "高精度", "教育"] },
+        { id: 3, name: "DeepSeek-R1", cat: "推論特化", sum: "数学・理系能力でGPTを超えたと話題。爆速かつ低コストで、エンジニアや研究者から熱狂的な支持。", detail: "オープンソースモデルも公開されており、ローカル環境での実行も可能。アジア発のAIとして世界を震撼させている。", critique: "Gemini評:『思考の連鎖（CoT）の可視化は素晴らしい。情報の広範さでは我々が勝る。』", word: "○", ichi: "×", google: "○", star: 4, tags: ["格安", "数学", "エンジニア向け"] },
+        { id: 4, name: "NotebookLM", cat: "解析型", sum: "Google提供。手持ちの資料を放り込むだけで、その資料専門のAIに。音声での解説生成が神機能。", detail: "複数のPDF、ウェブサイト、Googleドキュメントをソースとして一貫した回答を得られる。試験勉強の最強の味方。", critique: "Perplexity評:『クローズドな資料の解析力は凄まじい。ネット検索の速報性は我々の担当だ。』", word: "○", ichi: "×", google: "◎", star: 5, tags: ["資料解析", "教育", "Google連携"] },
+        // ... ここにデータを100個まで流し込む
     ];
 
-    function toggleMode() {
-        const body = document.body;
-        const liteBtn = document.getElementById('liteBtn');
-        const proBtn = document.getElementById('proBtn');
-        
-        if (body.classList.contains('lite-mode')) {
-            body.classList.replace('lite-mode', 'pro-mode');
-            liteBtn.classList.remove('active-mode');
-            proBtn.classList.add('active-mode');
-            document.getElementById('titleText').innerText = "AI 性能解析 & エンジニア向けカタログ";
-        } else {
-            body.classList.replace('pro-mode', 'lite-mode');
-            proBtn.classList.remove('active-mode');
-            liteBtn.classList.add('active-mode');
-            document.getElementById('titleText').innerText = "あなたに最適なAIを見つける";
-        }
-        render();
-    }
-
-    function render() {
-        const isPro = document.body.classList.contains('pro-mode');
-        const container = document.getElementById('aiContainer');
-        
-        container.innerHTML = aiDatabase.map(ai => `
-            <div class="ai-card" style="${ai.sponsored ? 'border: 2px solid var(--accent)' : ''}">
-                ${ai.sponsored ? '<span class="badge">おすすめ (Editor\'s Choice)</span>' : ''}
-                <div class="ai-icon"><i class="fas fa-microchip"></i></div>
+    // カードを生成
+    function renderCards(data) {
+        const grid = document.getElementById('aiGrid');
+        grid.innerHTML = data.map(ai => `
+            <div class="ai-card" onclick="openModal(${ai.id})">
+                ${ai.star === 5 ? '<div class="hot-badge">RANK S</div>' : ''}
                 <h3>${ai.name}</h3>
-                <p style="font-size:0.8rem; opacity:0.7">${ai.maker} | ${ai.cat}</p>
-                
-                <p class="desc">${isPro ? ai.proDesc : ai.liteDesc}</p>
-
-                <div class="ai-critique">
-                    <strong><i class="fas fa-robot"></i> AI相互分析レビュー</strong>
-                    ${ai.critique}
-                </div>
-
-                ${isPro ? `
-                    <div class="pro-stats">
-                        <div class="stat-item">安全性: ${ai.security}</div>
-                        <div class="stat-item">言語: ${ai.lang}</div>
-                        <div class="stat-item">API連携: ${ai.openRouter ? '対応' : '未対応'}</div>
-                        <div class="stat-item">ランク: ${ai.rank}</div>
-                    </div>
-                ` : `
-                    <p style="font-size:0.9rem; color:var(--success)"><b>●</b> 日本語で使えます</p>
-                `}
-
-                <div class="btn-group">
-                    <a href="#" class="btn-main">${ai.openRouter ? 'OpenRouterでお試し' : '公式サイトへ'}</a>
-                    <a href="#" class="btn-sub">詳細データ</a>
+                <p class="summary">${ai.sum}</p>
+                <div class="tags">
+                    ${ai.tags.map(t => `<span class="tag">${t}</span>`).join('')}
                 </div>
             </div>
         `).join('');
     }
 
-    render();
+    // 検索フィルタ
+    function filterAI() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const filtered = aiData.filter(ai => 
+            ai.name.toLowerCase().includes(query) || 
+            ai.sum.toLowerCase().includes(query) ||
+            ai.tags.some(t => t.toLowerCase().includes(query))
+        );
+        renderCards(filtered);
+    }
+
+    // モーダルを開く
+    function openModal(id) {
+        const ai = aiData.find(a => a.id === id);
+        const body = document.getElementById('modalBody');
+        body.innerHTML = `
+            <h2 style="color:var(--accent); margin-bottom:5px;">${ai.name}</h2>
+            <p style="opacity:0.6; margin-bottom:20px;">カテゴリ: ${ai.cat}</p>
+            
+            <h3><i class="fas fa-info-circle"></i> 詳細解説</h3>
+            <p>${ai.detail}</p>
+
+            <div class="ai-critique">
+                <strong><i class="fas fa-robot"></i> AI相互分析（他AIによる評価）</strong>
+                ${ai.critique}
+            </div>
+
+            <h3><i class="fas fa-plug"></i> 文書ソフト親和性</h3>
+            <div class="compatibility">
+                <div class="comp-item"><i class="fab fa-microsoft"></i> Word<br><b>${ai.word}</b></div>
+                <div class="comp-item"><i class="fas fa-pen-nib"></i> 一太郎<br><b>${ai.ichi}</b></div>
+                <div class="comp-item"><i class="fab fa-google"></i> ドキュメント<br><b>${ai.google}</b></div>
+            </div>
+
+            <a href="#" class="btn-main" style="display:block; text-align:center; padding:15px; background:var(--accent); color:white; text-decoration:none; border-radius:10px; font-weight:bold; margin-top:20px;">
+                このAIを公式サイトで試す
+            </a>
+        `;
+        document.getElementById('aiModal').style.display = 'flex';
+    }
+
+    function closeModal(e) {
+        if(e.target.id === 'aiModal') document.getElementById('aiModal').style.display = 'none';
+    }
+
+    // 初期表示
+    renderCards(aiData);
 </script>
 
 </body>
