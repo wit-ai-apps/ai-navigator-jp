@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>一括データアップローダー - Claude 3.5 Sonnet版</title>
+    <title>AI Navigator JP 一括登録 (10選)</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -15,74 +15,90 @@
             messagingSenderId: "533690073056",
             appId: "1:533690073056:web:41da64545b73f14fcd3585"
         };
-
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        const claudeData = {
-            name: "Claude 3.5 Sonnet",
-            rank: "S",
-            // ホーム画面用：惹きつけるキャッチ
-            desc: "「AIと隣り合わせで、形にする。」 Artifacts機能により、指示が即座にアプリや図面として動き出します。2026年、最も『隣にいてほしい』と願われる思慮深いパートナーです。",
-            // 詳細ページ用：メーカーの主張・5段階評価・連携・価格を全投入
-            detail_html: `
-                <div class="detail-section">
-                    <h3>【メーカーの主張】</h3>
-                    <p>Anthropicは、Claudeを「人間の知性を拡張する安全なパートナー」と定義。独自の「憲法AI」設計により、ハルシネーションを極限まで抑制。2026年現在、20万トークンの長大な文脈理解と、画面を認識して操作する「Computer Use」機能でエージェント時代の頂点に立ちます。</p>
-                    
-                    <h3>【5段階評価】</h3>
-                    <ul>
-                        <li>◎ 日本語の流暢さ：翻訳臭ゼロ、文脈に合わせた自然な敬語。</li>
-                        <li>◎ 思考・論理力：科学計算・高難度タスクで業界標準を更新。</li>
-                        <li>〇 音声対話：アプリ版での極めて自然なリアルタイム会話。</li>
-                        <li>◎ 画像認識：複雑なグラフや手書き資料を正確に構造化。</li>
-                        <li>✕ 画像・映像生成：安全性を重視し、生成機能は非搭載。</li>
-                    </ul>
-
-                    <h3>【導線・連携】</h3>
-                    <p>GitHub Copilot連携、Google Workspace/MS Officeドキュメントの直接分析、VS Code内でのコード自動修正など、プロのワークフローに完全対応。</p>
-
-                    <h3>【価格プラン】</h3>
-                    <ul>
-                        <li>Free: $0 (回数制限あり)</li>
-                        <li>Pro: $20/月 (5倍の送信枠、新機能先行)</li>
-                        <li>Team: $25/人 (共同作業、管理機能)</li>
-                    </ul>
-
-                    <div style="background:#eef2ff; padding:15px; border-radius:8px; color:#1e40af; font-weight:bold;">
-                        💡 なべちょう流・賢い試し方：<br>
-                        「知能そのもの」を味わうならClaudeが最強。月3,000円を払う前に、OpenRouterで数円分だけ使ってその『論理のキレ』を体感してください。
-                    </div>
-                </div>
-            `,
-            url: "https://claude.ai",
-            aff_url: "", 
-            openrouter_id: "anthropic/claude-3.5-sonnet",
-            price: "無料〜（月額$20）",
-            timestamp: serverTimestamp()
-        };
+        const aiDataList = [
+            {
+                name: "ChatGPT (GPT-4o)", rank: "S", price: "無料〜$20",
+                desc: "世界標準の万能AI。音声会話、画像生成、高度な分析まで1つで完結。2026年、最も洗練された『AIの顔』です。",
+                url: "https://chatgpt.com", openrouter_id: "openai/gpt-4o",
+                detail_html: `<h3>【評価】</h3><ul><li>◎ 汎用性：何を聞いても80点以上の回答</li><li>◎ 音声：遅延ゼロの自然な対話</li><li>〇 画像生成：DALL-E 3内蔵</li></ul><h3>【連携】</h3><p>MS Word, Excel, Apple Intelligence標準統合</p>`
+            },
+            {
+                name: "Perplexity AI", rank: "S", price: "無料〜$20",
+                desc: "『検索』を過去にするAI。ネット上の最新情報をソース付きで回答。リサーチ作業が10倍速くなります。",
+                url: "https://www.perplexity.ai", openrouter_id: "perplexity/sonar-reasoning",
+                detail_html: `<h3>【評価】</h3><ul><li>◎ 信頼性：全ての回答に出典明示</li><li>◎ 最新性：リアルタイムのニュースに強い</li><li>〇 効率：検索の手間をゼロに</li></ul><h3>【連携】</h3><p>Chrome拡張、モバイルアプリ</p>`
+            },
+            {
+                name: "Midjourney v7", rank: "S", price: "$10〜$120",
+                desc: "芸術的画像生成の頂点。言葉から写真、ロゴ、アートを最高品質で創造。2026年もビジュアル表現の王者です。",
+                url: "https://www.midjourney.com", openrouter_id: "",
+                detail_html: `<h3>【評価】</h3><ul><li>◎ 品質：実写と見紛うリアリティ</li><li>◎ 芸術性：独特の質感とセンス</li><li>△ 操作性：DiscordベースからWeb移行中</li></ul><h3>【連携】</h3><p>独自Webギャラリー、Discord</p>`
+            },
+            {
+                name: "Google Gemini 1.5 Pro", rank: "S", price: "無料〜$20",
+                desc: "Googleの知性が結集。200万トークンの巨大な記憶容量で、動画や数千ページの資料を丸ごと分析します。",
+                url: "https://gemini.google.com", openrouter_id: "google/gemini-pro-1.5",
+                detail_html: `<h3>【評価】</h3><ul><li>◎ 記憶：長大な資料の横断検索に最強</li><li>◎ 統合：Google Workspaceと完全同期</li><li>〇 速度：大容量でも高速レスポンス</li></ul><h3>【連携】</h3><p>Gmail, Google Docs, Drive</p>`
+            },
+            {
+                name: "Cursor", rank: "S", price: "無料〜$20",
+                desc: "エンジニアの脳を拡張するエディタ。コードを『書く』のではなく『AIに書かせる』次世代の開発体験。",
+                url: "https://cursor.sh", openrouter_id: "",
+                detail_html: `<h3>【評価】</h3><ul><li>◎ 開発効率：コードを先読みして提案</li><li>◎ 賢さ：リポジトリ全体をAIが把握</li><li>〇 導入：VS Codeから設定を引継ぎ可能</li></ul><h3>【連携】</h3><p>GitHub, VS Codeプラグイン</p>`
+            },
+            {
+                name: "Gamma", rank: "A", price: "無料〜$20",
+                desc: "スライド作成の革命。数行の指示で、デザイン済みの美しいプレゼン資料が1分で完成します。",
+                url: "https://gamma.app", openrouter_id: "",
+                detail_html: `<h3>【評価】</h3><ul><li>◎ 時短：構成・文章・画像が自動配置</li><li>〇 柔軟性：作成後の修正もAIと対話可能</li><li>〇 見た目：プロ級のデザインテンプレート</li></ul><h3>【連携】</h3><p>PDF, PowerPoint書き出し</p>`
+            },
+            {
+                name: "NotebookLM", rank: "A", price: "無料",
+                desc: "Googleの『考えるノート』。自分の資料だけを元に回答。ポッドキャスト風の要約生成が話題。",
+                url: "https://notebooklm.google.com", openrouter_id: "",
+                detail_html: `<h3>【評価】</h3><ul><li>◎ 正確性：自分の資料のみを参照（嘘なし）</li><li>◎ 音声要約：資料を二人の会話形式で解説</li><li>〇 知的生産：論文や資料の整理に最適</li></ul><h3>【連携】</h3><p>PDF, Google Docs, Webサイト</p>`
+            },
+            {
+                name: "DeepL Write", rank: "A", price: "無料",
+                desc: "文筆の守護神。文法ミスだけでなく、ニュアンスやトーンを最適化。プロ級の文章へ昇華させます。",
+                url: "https://www.deepl.com/write", openrouter_id: "",
+                detail_html: `<h3>【評価】</h3><ul><li>◎ 品格：不自然な日本語を洗練された表現へ</li><li>〇 選択肢：言い換え案を複数提示</li><li>〇 操作：極めてシンプルで誰でも使える</li></ul><h3>【連携】</h3><p>ブラウザ拡張、DeepLアプリ</p>`
+            },
+            {
+                name: "Suno v4", rank: "A", price: "無料〜$24",
+                desc: "音楽生成の魔法。歌詞とジャンルを指定するだけで、ボーカル付きのフル楽曲を数分で生成します。",
+                url: "https://suno.com", openrouter_id: "",
+                detail_html: `<h3>【評価】</h3><ul><li>◎ 感動：人間の歌声と区別不能なクオリティ</li><li>〇 創造：オリジナル曲の作曲・編曲</li><li>〇 多彩：演歌からメタルまで全ジャンル対応</li></ul><h3>【連携】</h3><p>MP3/WAV書き出し</p>`
+            },
+            {
+                name: "Grok 3", rank: "A", price: "X Premium加入",
+                desc: "X（旧Twitter）のリアルタイム情報と繋がるAI。ユーモアと毒舌、そして最新トレンドの把握に強い。",
+                url: "https://x.com/i/grok", openrouter_id: "x-ai/grok-3",
+                detail_html: `<h3>【評価】</h3><ul><li>◎ 即時性：今、世界で起きていることを把握</li><li>〇 自由：規制が少なく、本音の対話が可能</li><li>〇 統合：Xアプリ内で直接利用可能</li></ul><h3>【連携】</h3><p>X (Twitter)プラットフォーム</p>`
+            }
+        ];
 
         window.upload = async () => {
             const btn = document.getElementById('btn');
-            btn.disabled = true; btn.innerText = "登録中...";
+            btn.disabled = true; btn.innerText = "10個登録中...";
             try {
-                await addDoc(collection(db, "tools"), claudeData);
-                alert("Claude 3.5 Sonnet のリッチデータの登録に成功しました！");
-            } catch (e) { alert("失敗: " + e.message); }
-            btn.disabled = false; btn.innerText = "一括登録実行（Claude版）";
+                for(const data of aiDataList) {
+                    await addDoc(collection(db, "tools"), { ...data, timestamp: serverTimestamp() });
+                }
+                alert("精鋭10選、登録完了！サイトを確認してください。");
+            } catch (e) { alert("エラー: " + e.message); }
+            btn.disabled = false; btn.innerText = "一括登録実行 (10選)";
         };
     </script>
-    <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f8fafc; }
-        .card { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        button { background: #2563eb; color: white; border: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-    </style>
 </head>
-<body>
-    <div class="card">
-        <h2>リッチデータ・アップローダー</h2>
-        <p>これを実行すると、なべちょうさん承認済みの<br>「Claude 3.5 Sonnet」の詳細データが登録されます。</p>
-        <button id="btn" onclick="upload()">一括登録実行（Claude版）</button>
+<body style="font-family:sans-serif; text-align:center; padding:50px; background:#f0f4f8;">
+    <div style="background:white; padding:40px; border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,0.1); display:inline-block;">
+        <h2>🚀 AI 100選プロジェクト：第1弾一括投入</h2>
+        <p>これを押すと、厳選された10個のAIデータが瞬時に登録されます。</p>
+        <button id="btn" onclick="upload()" style="padding:20px 40px; font-size:1.2rem; font-weight:bold; background:#2563eb; color:white; border:none; border-radius:10px; cursor:pointer;">一括登録実行 (10選)</button>
     </div>
 </body>
 </html>
