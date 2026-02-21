@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Navigator JP | 100 Selection</title>
+    <title>AI Navigator JP | 100 Selection Mega</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -19,24 +19,33 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- 100選データリスト（主要モデルから順次追加） ---
+        // --- 100選・拡張データリスト（第2弾） ---
         const aiDataList = [
-            { name: "ChatGPT", company: "OpenAI", rank: "S", price: "無料〜$20", url: "https://chatgpt.com", desc: "AIの代名詞。文章生成、画像生成、音声会話までこなす万能王者。" },
-            { name: "Claude 3.5 Sonnet", company: "Anthropic", rank: "S", price: "無料〜$20", url: "https://claude.ai", desc: "極めて高い知性と自然な日本語。プログラミングや複雑な思考に最適。" },
-            { name: "Gemini 1.5 Pro", company: "Google", rank: "S", price: "無料〜$20", url: "https://gemini.google.com", desc: "Googleの全サービスと連携。数千ページの資料を一度に読み込む大容量メモリ。" },
-            { name: "Perplexity AI", company: "Perplexity", rank: "S", price: "無料〜$20", url: "https://www.perplexity.ai", desc: "最新情報をソース付きで検索。リサーチ作業を劇的に効率化します。" },
-            { name: "Midjourney", company: "Midjourney", rank: "S", price: "$10〜", url: "https://www.midjourney.com", desc: "芸術的画像生成の最高峰。実写と見紛うクオリティを言葉から創造。" },
-            { name: "Grok 3", company: "xAI", rank: "A", price: "X Premium", url: "https://x.com", desc: "Xのリアルタイム情報を学習。最新トレンドとユーモアを兼ね備える。" },
-            { name: "Cursor", company: "Anysphere", rank: "S", price: "無料〜$20", url: "https://cursor.sh", desc: "AIを搭載した最強のコードエディタ。開発速度を異次元へ引き上げる。" },
-            { name: "Gamma", company: "Gamma Tech", rank: "A", price: "無料〜$20", url: "https://gamma.app", desc: "数行の指示から美しいプレゼン資料を自動生成。資料作成の革命。" },
-            { name: "DeepL Write", company: "DeepL", rank: "A", price: "無料", url: "https://www.deepl.com/write", desc: "AIによる文章校正。不自然な表現を、洗練されたプロの文体へ修正。" },
-            { name: "NotebookLM", company: "Google", rank: "A", price: "無料", url: "https://notebooklm.google.com", desc: "自分専用の情報を学習させるノート。資料に基づいた正確な回答と音声要約。" },
-            { name: "Suno v4", company: "Suno AI", rank: "A", price: "無料〜$24", url: "https://suno.com", desc: "言葉から高品質な楽曲と歌声を生成。誰でも作曲家になれる時代へ。" },
-            { name: "Pika", company: "Pika Labs", rank: "A", price: "無料〜", url: "https://pika.art", desc: "文字から動画を生成。物理法則を理解した驚異の映像体験。" }
-            // ※100個までこのリストを増強可能です
+            // 前回の主要メンバー
+            { name: "ChatGPT", company: "OpenAI", rank: "S", price: "無料〜$20", url: "https://chatgpt.com", desc: "AIの代名詞。文章、画像、音声、分析を網羅する全知全能のパートナー。" },
+            { name: "Claude 3.5 Sonnet", company: "Anthropic", rank: "S", price: "無料〜$20", url: "https://claude.ai", desc: "極めて高い知性と自然な日本語。コード生成と複雑な思考で圧倒的評価。" },
+            { name: "Gemini 1.5 Pro", company: "Google", rank: "S", price: "無料〜$20", url: "https://gemini.google.com", desc: "Googleの全サービスと統合。200万トークンの巨大メモリで長文読解に最強。" },
+            { name: "Perplexity AI", company: "Perplexity", rank: "S", price: "無料〜$20", url: "https://www.perplexity.ai", desc: "情報の出典を明示する検索特化AI。リサーチ作業の概念を塗り替えます。" },
+            { name: "Midjourney", company: "Midjourney", rank: "S", price: "$10〜", url: "https://www.midjourney.com", desc: "芸術的画像生成の最高峰。言葉から写真と見紛う芸術作品を創造。" },
+            { name: "Cursor", company: "Anysphere", rank: "S", price: "無料〜$20", url: "https://cursor.sh", desc: "エンジニアの脳を拡張するAIエディタ。自然言語でアプリ構築が可能。" },
+            // 新規追加メンバー
+            { name: "Runway Gen-3", company: "Runway", rank: "S", price: "$12〜", url: "https://runwayml.com", desc: "次世代の動画生成AI。物理法則をシミュレートした圧倒的映像美。" },
+            { name: "Luma Dream Machine", company: "Luma AI", rank: "A", price: "無料〜", url: "https://lumalabs.ai", desc: "超高速・高画質な動画生成。静止画をリアルな動画へ命を吹き込む。" },
+            { name: "ElevenLabs", company: "ElevenLabs", rank: "S", price: "無料〜", url: "https://elevenlabs.io", desc: "感情豊かなAI音声合成。驚くほど自然な多言語ナレーションを生成。" },
+            { name: "HeyGen", company: "HeyGen", rank: "S", price: "$24〜", url: "https://www.heygen.com", desc: "ビデオ翻訳とアバター生成。本人が喋っているかのような映像を自動作成。" },
+            { name: "Sunov4", company: "Suno AI", rank: "S", price: "無料〜", url: "https://suno.com", desc: "数秒でプロ級の楽曲をフル生成。ボーカルの表現力はもはや人間並み。" },
+            { name: "Kling AI", company: "Kuaishou", rank: "A", price: "無料〜", url: "https://klingai.com", desc: "最長2分の動画生成が可能。一貫性のある動きと高い描写力が特徴。" },
+            { name: "Adobe Firefly", company: "Adobe", rank: "A", price: "無料〜", url: "https://firefly.adobe.com", desc: "クリエイターのための安全な画像生成。Photoshop等との強力な連携。" },
+            { name: "Canva Magic", company: "Canva", rank: "A", price: "無料〜", url: "https://www.canva.com", desc: "デザインの民主化。AIがレイアウトから画像生成までトータルアシスト。" },
+            { name: "NotebookLM", company: "Google", rank: "S", price: "無料", url: "https://notebooklm.google.com", desc: "資料を学習させ、正確な回答と音声要約を生成する究極の知的生産ツール。" },
+            { name: "Udio", company: "Udio AI", rank: "A", price: "無料〜", url: "https://www.udio.com", desc: "音楽の質感に定評のある生成AI。高音質なステレオ音源を瞬時に作成。" },
+            { name: "Harvey", company: "Harvey AI", rank: "S", price: "企業向け", url: "https://www.harvey.ai", desc: "弁護士・法務に特化したAI。膨大な判例や文書の分析を自動化。" },
+            { name: "Consensus", company: "Consensus", rank: "A", price: "無料〜", url: "https://consensus.app", desc: "2億件の科学論文からエビデンスを検索。学術的な根拠を即座に提示。" },
+            { name: "Julius AI", company: "Julius", rank: "A", price: "無料〜", url: "https://julius.ai", desc: "データ分析の専門家。Excelや統計データを渡すだけで可視化と分析を実行。" },
+            { name: "Sora", company: "OpenAI", rank: "S", price: "準備中", url: "https://openai.com/sora", desc: "1分間の高品質動画を生成。物理シミュレーションと一貫性が業界を震撼。" }
         ];
 
-        // --- 管理機能 ---
+        // --- 以下、管理・表示ロジック（変更なし） ---
         window.bulkUpload = async () => {
             const btn = document.getElementById('upload-btn');
             btn.innerText = "登録中..."; btn.disabled = true;
@@ -50,25 +59,23 @@
                         count++;
                     }
                 }
-                alert(count + "件のAIを新規登録しました！");
+                alert(count + "件のAIを新規追加しました！");
             } catch (e) { alert("失敗: " + e.message); }
             btn.innerText = "AI 100選を一括登録"; btn.disabled = false;
         };
 
         window.deleteAllData = async () => {
-            if(!confirm("全てのデータを削除してリセットしますか？")) return;
+            if(!confirm("全てリセットしますか？")) return;
             const snapshot = await getDocs(collection(db, "tools"));
             for (const d of snapshot.docs) { await deleteDoc(doc(db, "tools", d.id)); }
             alert("リセット完了。");
         };
 
-        // --- 表示ロジック ---
         const renderCards = (docs) => {
             const container = document.getElementById('ai-container');
             container.innerHTML = docs.map(doc => {
                 const item = doc.data();
                 const isS = item.rank === 'S';
-                // アイコンをドメインから取得
                 const iconUrl = `https://www.google.com/s2/favicons?sz=128&domain=${new URL(item.url).hostname}`;
                 return `
                     <div class="ai-card ${isS ? 's-rank' : ''}">
@@ -86,57 +93,47 @@
                         <p class="ai-desc">${item.desc}</p>
                         <div class="btn-group">
                             <a href="${item.url}" target="_blank" class="btn btn-primary">公式サイト</a>
-                            <button class="btn btn-outline">詳細を唸る</button>
+                            <button class="btn btn-outline" onclick="alert('詳細・評価は順次公開予定です')">唸る詳細</button>
                         </div>
                     </div>
                 `;
             }).join('');
         };
 
-        const q = query(collection(db, "tools"), orderBy("timestamp", "desc"));
-        onSnapshot(q, (snapshot) => renderCards(snapshot.docs));
+        onSnapshot(query(collection(db, "tools"), orderBy("timestamp", "desc")), (s) => renderCards(s.docs));
     </script>
     <style>
         :root { --bg: #0b0f1a; --card: #161e2e; --blue: #38bdf8; --gold: #fbbf24; --text: #f1f5f9; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 20px; }
         header { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto 20px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
-        
-        .ai-card { background: var(--card); border-radius: 16px; padding: 20px; border: 1px solid #1e293b; transition: 0.3s; }
-        .ai-card:hover { transform: translateY(-5px); border-color: var(--blue); box-shadow: 0 0 20px rgba(56, 189, 248, 0.1); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; max-width: 1200px; margin: 0 auto; }
+        .ai-card { background: var(--card); border-radius: 12px; padding: 15px; border: 1px solid #1e293b; transition: 0.2s; }
         .ai-card.s-rank { border-color: var(--gold); }
-        
-        .card-top { display: flex; gap: 15px; align-items: center; margin-bottom: 15px; }
-        .ai-icon { width: 48px; height: 48px; border-radius: 10px; background: white; padding: 4px; object-fit: contain; }
-        .ai-name { font-weight: bold; font-size: 1.2rem; color: #fff; }
-        .ai-company { font-size: 0.8rem; color: #94a3b8; }
-        
-        .card-meta { display: flex; gap: 10px; margin-bottom: 15px; }
-        .badge { font-size: 0.7rem; padding: 4px 10px; border-radius: 6px; font-weight: bold; text-transform: uppercase; }
+        .card-top { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+        .ai-icon { width: 40px; height: 40px; border-radius: 8px; background: #fff; padding: 3px; }
+        .ai-name { font-weight: bold; font-size: 1rem; color: #fff; }
+        .ai-company { font-size: 0.75rem; color: #94a3b8; }
+        .card-meta { display: flex; gap: 8px; margin-bottom: 12px; }
+        .badge { font-size: 0.65rem; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
         .rank { background: rgba(56, 189, 248, 0.1); color: var(--blue); border: 1px solid var(--blue); }
-        .price { background: #1e293b; color: #cbd5e1; }
-        
-        .ai-desc { font-size: 0.85rem; line-height: 1.6; color: #cbd5e1; height: 3.2em; overflow: hidden; margin-bottom: 15px; }
-        .btn-group { display: flex; gap: 10px; }
-        .btn { flex: 1; padding: 10px; border-radius: 8px; text-align: center; font-size: 0.8rem; font-weight: bold; text-decoration: none; cursor: pointer; transition: 0.3s; }
+        .ai-desc { font-size: 0.8rem; color: #cbd5e1; height: 3.2em; overflow: hidden; margin-bottom: 12px; }
+        .btn-group { display: flex; gap: 8px; }
+        .btn { flex: 1; padding: 8px; border-radius: 6px; text-align: center; font-size: 0.75rem; font-weight: bold; text-decoration: none; cursor: pointer; }
         .btn-primary { background: var(--blue); color: #000; border: none; }
         .btn-outline { background: transparent; border: 1px solid var(--blue); color: var(--blue); }
-        
         .admin-box { background: #1e293b; padding: 15px; border-radius: 12px; margin: 0 auto 20px; max-width: 1200px; display: none; }
         .admin-box.show { display: block; border: 1px solid var(--blue); }
     </style>
 </head>
 <body>
     <header>
-        <h1 style="font-size: 1.8rem;">AI Navigator <span style="color:var(--blue)">JP</span></h1>
+        <h1>AI Navigator <span style="color:var(--blue)">JP</span></h1>
         <button onclick="document.getElementById('admin').classList.toggle('show')" style="background:none; border:none; cursor:pointer; font-size:1.5rem;">⚙️</button>
     </header>
-
     <div id="admin" class="admin-box">
-        <button id="upload-btn" onclick="bulkUpload()" class="btn btn-primary" style="width:auto; padding:10px 30px;">AI 100選を一括登録</button>
+        <button id="upload-btn" onclick="bulkUpload()" class="btn btn-primary" style="width:auto; padding:10px 30px;">最新AIを一括追加</button>
         <button onclick="deleteAllData()" class="btn btn-outline" style="border-color:#ef4444; color:#ef4444; width:auto; padding:10px 30px; margin-left:10px;">リセット</button>
     </div>
-
     <div id="ai-container" class="grid"></div>
 </body>
 </html>
