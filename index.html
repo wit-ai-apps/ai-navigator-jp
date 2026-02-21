@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Navigator JP | v60.0.0</title>
+    <title>AI Navigator JP | v61.0.0 Professional</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, query, addDoc, serverTimestamp, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyC990U7XauADarvkUw-WDM7_NMNssp6x2U",
@@ -19,16 +19,20 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- 初期投入データ（一括登録ボタン用） ---
+        // --- 100選データリスト（ブランド重複排除・正確な国旗付） ---
         const aiDataList = [
-            { rank: 1, name: "ChatGPT", company: "OpenAI", country: "US", flag: "🇺🇸", version: "o3-mini", lang: "JP", platform: "Web/App", url: "https://chatgpt.com", desc: "AIの絶対王者。高度な推論とマルチモーダル能力で全方位をカバー。" },
-            { rank: 2, name: "Claude 3.7", company: "Anthropic", country: "US", flag: "🇺🇸", version: "Sonnet", lang: "JP", platform: "Web/App", url: "https://claude.ai", desc: "自然な日本語と誠実な回答。プログラミングと複雑な思考で支持率No.1。" },
-            { rank: 3, name: "Perplexity AI", company: "Perplexity", country: "US", flag: "🇺🇸", version: "Pro", lang: "JP", platform: "Web/App", url: "https://www.perplexity.ai", desc: "出典付き検索の決定版。最新情報を正確にまとめ上げ、調査を爆速化。" },
-            { rank: 4, name: "Gemini 3.1 Pro", company: "Google", country: "US", flag: "🇺🇸", version: "v3.1", lang: "JP", platform: "Web/App", url: "https://gemini.google.com", desc: "Google各ツールと融合。推論能力が劇的に向上した最新世代モデル。" },
-            { rank: 5, name: "DeepL Write", company: "DeepL", country: "DE", flag: "🇩🇪", version: "v2.0", lang: "JP", platform: "Web/App", url: "https://www.deepl.com/write", desc: "文章の品格を整える。誤字脱字だけでなく、自然な文体へAIが昇華。" },
-            { rank: 6, name: "Suno v4", company: "Suno AI", country: "US", flag: "🇺🇸", version: "v4.0", lang: "JP", platform: "Web/App", url: "https://suno.com", desc: "誰でも音楽家になれる魔法。日本語の歌唱力はもはや人間と判別不能。" },
-            { rank: 7, name: "Runway Gen-3", company: "Runway", country: "US", flag: "🇺🇸", version: "Alpha", lang: "EN", platform: "Web/App", url: "https://runwayml.com", desc: "映画品質の動画生成。物理世界を完全に理解したかのような映像美。" },
-            { rank: 8, name: "Kling AI", company: "Kuaishou", country: "CN", flag: "🇨🇳", version: "v1.5", lang: "EN/CN", platform: "Web/App", url: "https://klingai.com", desc: "驚異の動画生成クオリティ。一貫性のある動きと高い描写力で話題。" }
+            { rank: 1, name: "ChatGPT", company: "OpenAI", country: "US", flag: "🇺🇸", version: "o3-mini", lang: "JP", platform: "Web/App", url: "https://chatgpt.com", desc: "AIの代名詞。最高峰の推論能力を持ち、文章・画像・音声・データ分析の全てで業界を牽引。" },
+            { rank: 2, name: "Claude 3.7", company: "Anthropic", country: "US", flag: "🇺🇸", version: "Sonnet", lang: "JP", platform: "Web/App", url: "https://claude.ai", desc: "不自然さのない日本語と、緻密なコード生成能力。長文読解と誠実な対話でプロ層から絶大な支持。" },
+            { rank: 3, name: "Perplexity AI", company: "Perplexity", country: "US", flag: "🇺🇸", version: "Pro", lang: "JP", platform: "Web/App", url: "https://www.perplexity.ai", desc: "出典を明示する対話型検索。ネット上の最新情報を即座に整理し、検索エンジンの概念を塗り替えた。" },
+            { rank: 4, name: "Midjourney", company: "Midjourney", country: "US", flag: "🇺🇸", version: "v6.1", lang: "EN", platform: "Web", url: "https://www.midjourney.com", desc: "画像生成の最高到達点。写真、イラスト、ロゴなど、言葉から芸術的なビジュアルを生成。" },
+            { rank: 5, name: "Gemini", company: "Google", country: "US", flag: "🇺🇸", version: "2.0 Pro", lang: "JP", platform: "Web/App", url: "https://gemini.google.com", desc: "Google各ツールと融合。200万トークンの巨大メモリにより、数千ページの資料分析に最強。" },
+            { rank: 6, name: "Cursor", company: "Anysphere", country: "US", flag: "🇺🇸", version: "v0.45", lang: "JP", platform: "App", url: "https://cursor.sh", desc: "AI搭載のコードエディタ。自然言語での指示で、開発速度を劇的に向上させるエンジニアの必需品。" },
+            { rank: 7, name: "DeepL Write", company: "DeepL", country: "DE", flag: "🇩🇪", version: "v2.0", lang: "JP", platform: "Web/App", url: "https://www.deepl.com/write", desc: "文章の品格を整える。誤字脱字の修正だけでなく、文脈に合わせた洗練された文体へ昇華。" },
+            { rank: 8, name: "Suno", company: "Suno AI", country: "US", flag: "🇺🇸", version: "v4.0", lang: "JP", platform: "Web/App", url: "https://suno.com", desc: "高品質な楽曲生成。日本語歌詞も完璧に歌い上げ、もはや人間と判別不能なレベルに到達。" },
+            { rank: 9, name: "HeyGen", company: "HeyGen", country: "US", flag: "🇺🇸", version: "v3.0", lang: "JP", platform: "Web", url: "https://www.heygen.com", desc: "ビデオ翻訳とアバター。自分の顔と声で多言語を話す動画を生成する、次世代の広報ツール。" },
+            { rank: 10, name: "Runway Gen-3", company: "Runway", country: "US", flag: "🇺🇸", version: "Alpha", lang: "EN", platform: "Web/App", url: "https://runwayml.com", desc: "映画品質の動画生成。物理法則をシミュレートした圧倒的な映像美で映像制作を自動化。" },
+            { rank: 11, name: "Kling AI", company: "Kuaishou", country: "CN", flag: "🇨🇳", version: "v1.5", lang: "EN/CN", platform: "Web/App", url: "https://klingai.com", desc: "最大2分の高品質動画生成。動きの一貫性とリアルな描写で、世界の映像制作者を唸らせる。" },
+            { rank: 12, name: "Wolfram Alpha", company: "Wolfram", country: "US", flag: "🇺🇸", version: "Classic", lang: "EN", platform: "Web/App", url: "https://www.wolframalpha.com", desc: "数学・科学計算の絶対的権威。計算ミスをしない厳密な推論で微積分から物理まで解く。" }
         ];
 
         window.bulkUpload = async () => {
@@ -57,30 +61,32 @@
 
         const renderCards = (docs) => {
             const container = document.getElementById('ai-container');
-            container.innerHTML = docs.sort((a,b) => a.data().rank - b.data().rank).map(doc => {
+            container.innerHTML = docs.sort((a,b) => (a.data().rank || 999) - (b.data().rank || 999)).map(doc => {
                 const item = doc.data();
-                const iconUrl = `https://www.google.com/s2/favicons?sz=128&domain=${new URL(item.url).hostname}`;
+                const safeName = item.name || "不明なAI";
+                const safeUrl = item.url || "#";
+                const iconUrl = safeUrl !== "#" ? `https://www.google.com/s2/favicons?sz=128&domain=${new URL(safeUrl).hostname}` : "";
                 return `
                     <div class="ai-card ${item.rank <= 3 ? 'top-rank' : ''}">
-                        <div class="card-badge">#${item.rank}</div>
+                        <div class="card-badge">#${item.rank || '-'}</div>
                         <div class="card-top">
-                            <img src="${iconUrl}" class="ai-icon" alt="icon">
+                            <img src="${iconUrl}" class="ai-icon" onerror="this.src='https://via.placeholder.com/40'">
                             <div>
-                                <div class="ai-name">${item.name}</div>
+                                <div class="ai-name">${safeName}</div>
                                 <div class="ai-ver">Ver: ${item.version || '-'}</div>
                             </div>
                         </div>
                         <div class="card-company">
-                            <span>${item.flag} ${item.company}</span>
+                            <span>${item.flag || '🌐'} ${item.company || '不明'}</span>
                         </div>
                         <div class="card-meta">
-                            <span class="badge lang">${item.lang === 'JP' ? '日本語OK' : item.lang}</span>
-                            <span class="badge plat">${item.platform}</span>
-                            <span class="badge price">${item.price}</span>
+                            <span class="badge lang">${item.lang === 'JP' ? '日本語OK' : item.lang || 'EN'}</span>
+                            <span class="badge plat">${item.platform || 'Web'}</span>
+                            <span class="badge price">${item.price || '料金不明'}</span>
                         </div>
-                        <div class="desc-box"><p class="ai-desc">${item.desc}</p></div>
+                        <div class="desc-box"><p class="ai-desc">${item.desc || '説明文を準備中です。'}</p></div>
                         <div class="btn-group">
-                            <a href="${item.url}" target="_blank" class="btn btn-primary">公式サイト</a>
+                            <a href="${safeUrl}" target="_blank" class="btn btn-primary">公式サイト</a>
                             <button class="btn btn-outline" onclick="this.closest('.ai-card').querySelector('.desc-box').classList.toggle('expand')">唸る詳細</button>
                         </div>
                     </div>
@@ -92,10 +98,10 @@
     </script>
     <style>
         :root { --bg: #0b0f1a; --card: #161e2e; --blue: #38bdf8; --gold: #fbbf24; --text: #f1f5f9; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; }
         header { max-width: 1200px; margin: 0 auto 20px; border-bottom: 2px solid #1e293b; display: flex; justify-content: space-between; align-items: baseline; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; max-width: 1200px; margin: 0 auto; }
-        .ai-card { background: var(--card); border-radius: 12px; padding: 15px; border: 1px solid #1e293b; position: relative; transition: 0.2s; }
+        .ai-card { background: var(--card); border-radius: 12px; padding: 15px; border: 1px solid #1e293b; position: relative; display: flex; flex-direction: column; }
         .ai-card.top-rank { border-color: var(--gold); box-shadow: 0 0 15px rgba(251, 191, 36, 0.1); }
         .card-badge { position: absolute; top: 10px; right: 10px; font-weight: bold; font-size: 1.2rem; color: var(--gold); }
         .card-top { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
@@ -109,8 +115,8 @@
         .desc-box { height: 2.8em; overflow: hidden; transition: 0.3s; margin-bottom: 15px; }
         .desc-box.expand { height: auto; }
         .ai-desc { font-size: 0.75rem; color: #cbd5e1; line-height: 1.4; margin: 0; }
-        .btn-group { display: flex; gap: 6px; }
-        .btn { flex: 1; padding: 8px; border-radius: 6px; text-align: center; font-size: 0.75rem; font-weight: bold; text-decoration: none; border: none; cursor: pointer; }
+        .btn-group { display: flex; gap: 6px; margin-top: auto; }
+        .btn { flex: 1; padding: 8px; border-radius: 6px; text-align: center; font-size: 0.75rem; font-weight: bold; text-decoration: none; cursor: pointer; border: none; }
         .btn-primary { background: var(--blue); color: #000; }
         .btn-outline { background: transparent; border: 1px solid var(--blue); color: var(--blue); }
         .admin-box { background: #1e293b; padding: 15px; border-radius: 12px; margin: 0 auto 20px; max-width: 1200px; display: none; text-align: center; border: 1px solid var(--blue); }
@@ -119,7 +125,7 @@
 </head>
 <body>
     <header>
-        <h1>AI Navigator <span style="color:var(--blue)">JP</span> <small style="font-size:0.6rem; color:#94a3b8;">v60.0.0 Firebase</small></h1>
+        <h1>AI Navigator <span style="color:var(--blue)">JP</span> <small style="font-size:0.6rem; color:#94a3b8;">v61.0.0 rev.1</small></h1>
         <button onclick="document.getElementById('admin').classList.toggle('show')" style="background:none; border:none; cursor:pointer; font-size:1.2rem;">⚙️</button>
     </header>
     <div id="admin" class="admin-box">
