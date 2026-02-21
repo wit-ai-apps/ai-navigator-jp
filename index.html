@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Navigator JP | Optimized</title>
+    <title>AI Navigator JP | 100 Selection</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -19,18 +19,27 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- データリスト（開発会社名を追加） ---
+        // --- 100選データリスト（主要モデルから順次追加） ---
         const aiDataList = [
-            { name: "ChatGPT (GPT-4o)", company: "OpenAI", rank: "S", price: "無料〜$20", desc: "世界標準の万能AI。音声会話、画像生成、高度な分析まで1つで完結。" },
-            { name: "Claude 3.5 Sonnet", company: "Anthropic", rank: "S", price: "無料〜$20", desc: "高い知性と自然な日本語。Artifacts機能により指示が即座に動き出します。" },
-            { name: "Perplexity AI", company: "Perplexity", rank: "S", price: "無料〜$20", desc: "『検索』を過去にするAI。ネット上の最新情報をソース付きで回答。" }
-            // ... (他のAIも内部で同様に処理)
+            { name: "ChatGPT", company: "OpenAI", rank: "S", price: "無料〜$20", url: "https://chatgpt.com", desc: "AIの代名詞。文章生成、画像生成、音声会話までこなす万能王者。" },
+            { name: "Claude 3.5 Sonnet", company: "Anthropic", rank: "S", price: "無料〜$20", url: "https://claude.ai", desc: "極めて高い知性と自然な日本語。プログラミングや複雑な思考に最適。" },
+            { name: "Gemini 1.5 Pro", company: "Google", rank: "S", price: "無料〜$20", url: "https://gemini.google.com", desc: "Googleの全サービスと連携。数千ページの資料を一度に読み込む大容量メモリ。" },
+            { name: "Perplexity AI", company: "Perplexity", rank: "S", price: "無料〜$20", url: "https://www.perplexity.ai", desc: "最新情報をソース付きで検索。リサーチ作業を劇的に効率化します。" },
+            { name: "Midjourney", company: "Midjourney", rank: "S", price: "$10〜", url: "https://www.midjourney.com", desc: "芸術的画像生成の最高峰。実写と見紛うクオリティを言葉から創造。" },
+            { name: "Grok 3", company: "xAI", rank: "A", price: "X Premium", url: "https://x.com", desc: "Xのリアルタイム情報を学習。最新トレンドとユーモアを兼ね備える。" },
+            { name: "Cursor", company: "Anysphere", rank: "S", price: "無料〜$20", url: "https://cursor.sh", desc: "AIを搭載した最強のコードエディタ。開発速度を異次元へ引き上げる。" },
+            { name: "Gamma", company: "Gamma Tech", rank: "A", price: "無料〜$20", url: "https://gamma.app", desc: "数行の指示から美しいプレゼン資料を自動生成。資料作成の革命。" },
+            { name: "DeepL Write", company: "DeepL", rank: "A", price: "無料", url: "https://www.deepl.com/write", desc: "AIによる文章校正。不自然な表現を、洗練されたプロの文体へ修正。" },
+            { name: "NotebookLM", company: "Google", rank: "A", price: "無料", url: "https://notebooklm.google.com", desc: "自分専用の情報を学習させるノート。資料に基づいた正確な回答と音声要約。" },
+            { name: "Suno v4", company: "Suno AI", rank: "A", price: "無料〜$24", url: "https://suno.com", desc: "言葉から高品質な楽曲と歌声を生成。誰でも作曲家になれる時代へ。" },
+            { name: "Pika", company: "Pika Labs", rank: "A", price: "無料〜", url: "https://pika.art", desc: "文字から動画を生成。物理法則を理解した驚異の映像体験。" }
+            // ※100個までこのリストを増強可能です
         ];
 
-        // --- 重複防止付きアップロード ---
+        // --- 管理機能 ---
         window.bulkUpload = async () => {
             const btn = document.getElementById('upload-btn');
-            btn.disabled = true;
+            btn.innerText = "登録中..."; btn.disabled = true;
             try {
                 const snapshot = await getDocs(collection(db, "tools"));
                 const existingNames = snapshot.docs.map(d => d.data().name);
@@ -41,38 +50,33 @@
                         count++;
                     }
                 }
-                alert(count + "件の新しく登録しました（重複はスキップしました）");
-            } catch (e) { alert("エラー: " + e.message); }
-            btn.disabled = false;
+                alert(count + "件のAIを新規登録しました！");
+            } catch (e) { alert("失敗: " + e.message); }
+            btn.innerText = "AI 100選を一括登録"; btn.disabled = false;
         };
 
-        // --- 全削除機能 ---
         window.deleteAllData = async () => {
             if(!confirm("全てのデータを削除してリセットしますか？")) return;
             const snapshot = await getDocs(collection(db, "tools"));
             for (const d of snapshot.docs) { await deleteDoc(doc(db, "tools", d.id)); }
-            alert("削除が完了しました。");
+            alert("リセット完了。");
         };
 
-        // --- 検索・表示 ---
-        let allDocs = [];
-        window.filterCards = () => {
-            const word = document.getElementById('search-input').value.toLowerCase();
-            renderCards(allDocs.filter(d => d.data().name.toLowerCase().includes(word)));
-        };
-
+        // --- 表示ロジック ---
         const renderCards = (docs) => {
             const container = document.getElementById('ai-container');
             container.innerHTML = docs.map(doc => {
                 const item = doc.data();
                 const isS = item.rank === 'S';
+                // アイコンをドメインから取得
+                const iconUrl = `https://www.google.com/s2/favicons?sz=128&domain=${new URL(item.url).hostname}`;
                 return `
                     <div class="ai-card ${isS ? 's-rank' : ''}">
                         <div class="card-top">
-                            <div class="ai-icon">✨</div>
+                            <img src="${iconUrl}" class="ai-icon" alt="icon">
                             <div class="ai-info">
                                 <div class="ai-name">${item.name}</div>
-                                <div class="ai-company">${item.company || '開発元：不明'}</div>
+                                <div class="ai-company">${item.company}</div>
                             </div>
                         </div>
                         <div class="card-meta">
@@ -81,65 +85,56 @@
                         </div>
                         <p class="ai-desc">${item.desc}</p>
                         <div class="btn-group">
-                            <a href="${item.url}" target="_blank" class="btn btn-p">公式サイト</a>
-                            <button class="btn btn-o" onclick="alert('詳細画面へ')">詳細</button>
+                            <a href="${item.url}" target="_blank" class="btn btn-primary">公式サイト</a>
+                            <button class="btn btn-outline">詳細を唸る</button>
                         </div>
                     </div>
                 `;
             }).join('');
         };
 
-        onSnapshot(query(collection(db, "tools"), orderBy("timestamp", "desc")), (s) => {
-            allDocs = s.docs;
-            renderCards(allDocs);
-        });
+        const q = query(collection(db, "tools"), orderBy("timestamp", "desc"));
+        onSnapshot(q, (snapshot) => renderCards(snapshot.docs));
     </script>
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --blue: #38bdf8; --gold: #fbbf24; --text: #f1f5f9; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 20px; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        :root { --bg: #0b0f1a; --card: #161e2e; --blue: #38bdf8; --gold: #fbbf24; --text: #f1f5f9; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+        header { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
         
-        .search-box { width: 100%; max-width: 600px; margin: 10px auto 20px; display: flex; gap: 10px; }
-        .search-box input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; }
-        
-        .admin-menu { background: #334155; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: none; }
-        .admin-menu.show { display: block; }
-
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        .ai-card { background: var(--card); border-radius: 16px; padding: 20px; border: 1px solid rgba(56, 189, 248, 0.2); }
-        .ai-card.s-rank { border-color: var(--gold); box-shadow: 0 0 10px rgba(251, 191, 36, 0.1); }
+        .ai-card { background: var(--card); border-radius: 16px; padding: 20px; border: 1px solid #1e293b; transition: 0.3s; }
+        .ai-card:hover { transform: translateY(-5px); border-color: var(--blue); box-shadow: 0 0 20px rgba(56, 189, 248, 0.1); }
+        .ai-card.s-rank { border-color: var(--gold); }
         
         .card-top { display: flex; gap: 15px; align-items: center; margin-bottom: 15px; }
-        .ai-icon { width: 50px; height: 50px; background: #334155; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
-        .ai-name { font-weight: bold; font-size: 1.1rem; }
+        .ai-icon { width: 48px; height: 48px; border-radius: 10px; background: white; padding: 4px; object-fit: contain; }
+        .ai-name { font-weight: bold; font-size: 1.2rem; color: #fff; }
         .ai-company { font-size: 0.8rem; color: #94a3b8; }
         
         .card-meta { display: flex; gap: 10px; margin-bottom: 15px; }
-        .badge { font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
-        .rank { background: rgba(56, 189, 248, 0.1); color: var(--blue); }
-        .price { background: rgba(255, 255, 255, 0.1); color: #cbd5e1; }
+        .badge { font-size: 0.7rem; padding: 4px 10px; border-radius: 6px; font-weight: bold; text-transform: uppercase; }
+        .rank { background: rgba(56, 189, 248, 0.1); color: var(--blue); border: 1px solid var(--blue); }
+        .price { background: #1e293b; color: #cbd5e1; }
         
-        .ai-desc { font-size: 0.9rem; line-height: 1.5; color: #cbd5e1; height: 3em; overflow: hidden; }
-        .btn-group { display: flex; gap: 10px; margin-top: 15px; }
-        .btn { flex: 1; padding: 8px; border-radius: 6px; text-align: center; text-decoration: none; font-size: 0.8rem; font-weight: bold; cursor: pointer; border: none; }
-        .btn-p { background: var(--blue); color: var(--bg); }
-        .btn-o { border: 1px solid var(--blue); color: var(--blue); background: none; }
-        .btn-danger { background: #ef4444; color: white; }
+        .ai-desc { font-size: 0.85rem; line-height: 1.6; color: #cbd5e1; height: 3.2em; overflow: hidden; margin-bottom: 15px; }
+        .btn-group { display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 10px; border-radius: 8px; text-align: center; font-size: 0.8rem; font-weight: bold; text-decoration: none; cursor: pointer; transition: 0.3s; }
+        .btn-primary { background: var(--blue); color: #000; border: none; }
+        .btn-outline { background: transparent; border: 1px solid var(--blue); color: var(--blue); }
+        
+        .admin-box { background: #1e293b; padding: 15px; border-radius: 12px; margin: 0 auto 20px; max-width: 1200px; display: none; }
+        .admin-box.show { display: block; border: 1px solid var(--blue); }
     </style>
 </head>
 <body>
     <header>
-        <h2>AI Navigator <span style="color:var(--blue)">JP</span></h2>
+        <h1 style="font-size: 1.8rem;">AI Navigator <span style="color:var(--blue)">JP</span></h1>
         <button onclick="document.getElementById('admin').classList.toggle('show')" style="background:none; border:none; cursor:pointer; font-size:1.5rem;">⚙️</button>
     </header>
 
-    <div class="search-box">
-        <input type="text" id="search-input" placeholder="AIの名前で検索..." oninput="filterCards()">
-    </div>
-
-    <div id="admin" class="admin-menu">
-        <button id="upload-btn" onclick="bulkUpload()" class="btn btn-p" style="width:auto; padding: 10px 20px;">新規10選を登録（重複チェック付）</button>
-        <button onclick="deleteAllData()" class="btn btn-danger" style="width:auto; padding: 10px 20px; margin-left: 10px;">データを全て削除（リセット）</button>
+    <div id="admin" class="admin-box">
+        <button id="upload-btn" onclick="bulkUpload()" class="btn btn-primary" style="width:auto; padding:10px 30px;">AI 100選を一括登録</button>
+        <button onclick="deleteAllData()" class="btn btn-outline" style="border-color:#ef4444; color:#ef4444; width:auto; padding:10px 30px; margin-left:10px;">リセット</button>
     </div>
 
     <div id="ai-container" class="grid"></div>
