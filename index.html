@@ -8,24 +8,24 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // なabeちょうさん専用のFirebase接続キー
+        // なべちょうさんの最新Firebase設定
         const firebaseConfig = {
             apiKey: "AIzaSyC990U7XauADarvkUw-WDM7_NMNssp6x2U",
             authDomain: "ai-navigator-jp.firebaseapp.com",
             projectId: "ai-navigator-jp",
-            storageBucket: "ai-navigator-jp.appspot.com",
-            messagingSenderId: "1098634123456",
-            appId: "1:1098634123456:web:abcd1234efgh"
+            storageBucket: "ai-navigator-jp.firebasestorage.app",
+            messagingSenderId: "533690073056",
+            appId: "1:533690073056:web:41da64545b73f14fcd3585",
+            measurementId: "G-XVCPCLRX1W"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // データベース(Firestore)からリアルタイムでAI情報を取得して表示
         onSnapshot(query(collection(db, "tools"), orderBy("rank", "asc")), (snap) => {
             const list = document.getElementById('itemList');
             if (snap.empty) {
-                list.innerHTML = "<div style='grid-column: 1/-1; text-align:center; padding:50px;'><h3>現在データベースを構築中です</h3><p>管理画面からAIを追加するとここに表示されます。</p></div>";
+                list.innerHTML = "<div style='grid-column: 1/-1; text-align:center; padding:50px;'><h3>データベース接続成功：データ待ち</h3><p>admin.htmlからAIを追加してください。</p></div>";
                 return;
             }
             list.innerHTML = snap.docs.map(doc => {
@@ -33,7 +33,7 @@
                 return `
                     <article class="card ${d.rank === 'S' ? 'gold' : ''}">
                         <div class="head">
-                            <img src="https://www.google.com/s2/favicons?domain=${d.url}" class="logo" alt="">
+                            <img src="https://www.google.com/s2/favicons?domain=${d.url}" class="logo">
                             <h3>${d.name}</h3>
                         </div>
                         <p class="desc">${d.desc}</p>
@@ -42,7 +42,7 @@
                         </div>
                         <div class="footer-links">
                             <a href="${d.aff_url || d.url}" target="_blank" class="btn">公式サイト</a>
-                            ${d.openrouter_id ? `<a href="https://openrouter.ai/b/${d.openrouter_id}?referral=nabecho" target="_blank" class="btn-sub">OpenRouterで試す</a>` : ''}
+                            ${d.openrouter_id ? `<a href="https://openrouter.ai/b/${d.openrouter_id}?referral=nabecho" target="_blank" class="btn-sub">OpenRouter</a>` : ''}
                         </div>
                     </article>
                 `;
@@ -51,25 +51,21 @@
     </script>
     <style>
         :root { --primary: #1e40af; --accent: #2563eb; --bg: #f3f4f6; }
-        body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: var(--bg); color: #1e293b; margin: 0; padding: 20px; line-height: 1.6; }
+        body { font-family: 'Hiragino Sans', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
         header { text-align: center; padding: 40px 0; border-bottom: 2px solid #e5e7eb; margin-bottom: 30px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; max-width: 1400px; margin: 0 auto; }
-        .card { background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; display: flex; flex-direction: column; transition: 0.3s; position: relative; }
+        .card { background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; display: flex; flex-direction: column; transition: 0.3s; }
         .card.gold { border: 2px solid #fbbf24; background: #fffdf5; box-shadow: 0 4px 15px rgba(251, 191, 36, 0.1); }
         .head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-        .logo { width: 28px; height: 28px; border-radius: 4px; background: #eee; }
+        .logo { width: 28px; height: 28px; border-radius: 4px; }
         .desc { font-size: 0.88rem; color: #4b5563; height: 4.8em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; margin-bottom: 15px; }
-        .specs { font-size: 0.75rem; border-top: 1px dotted #ccc; padding-top: 10px; margin-top: auto; margin-bottom: 12px; }
-        .footer-links { display: flex; gap: 8px; }
+        .footer-links { display: flex; gap: 8px; margin-top: auto; }
         .btn { flex: 1; text-align: center; background: var(--primary); color: #fff; padding: 10px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 0.85rem; }
         .btn-sub { flex: 1; text-align: center; background: #fff; color: var(--primary); border: 1px solid var(--primary); padding: 10px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 0.85rem; }
     </style>
 </head>
 <body>
-    <header>
-        <h1 style="color:var(--primary); margin:0; font-size: 2rem;">AI Navigator <span style="color:var(--accent);">JP</span></h1>
-        <p>【v23.0.0】世界中のAI 100選 — リアルタイム・データベース同期</p>
-    </header>
-    <main class="grid" id="itemList">データベースに接続しています...</main>
+    <header><h1>AI Navigator <span style="color:var(--accent);">JP</span></h1><p>【v25.1.0】Database Linked</p></header>
+    <main class="grid" id="itemList">読込中...</main>
 </body>
 </html>
