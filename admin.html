@@ -20,6 +20,14 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // 通知を表示する関数（アラートの代わり）
+        const showToast = (message) => {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        };
+
         window.saveData = async () => {
             const btn = document.getElementById('saveBtn');
             btn.disabled = true; btn.innerText = "保存中...";
@@ -34,20 +42,33 @@
                     price: document.getElementById('price').value,
                     timestamp: serverTimestamp()
                 });
-                alert("反映完了！メインサイトを確認してください。");
+                showToast("✅ データベースに反映しました！"); // アラートの代わりに通知
                 document.getElementById('aiForm').reset();
-            } catch (e) { alert("エラー: " + e.message); }
+            } catch (e) { 
+                showToast("❌ エラーが発生しました"); 
+            }
             btn.disabled = false; btn.innerText = "データベースに保存";
         };
     </script>
     <style>
         body { font-family: sans-serif; background: #1e293b; color: white; padding: 20px; }
-        .form-box { max-width: 500px; margin: 0 auto; background: #334155; padding: 20px; border-radius: 12px; }
-        input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: none; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; }
+        .form-box { max-width: 500px; margin: 40px auto; background: #334155; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        h2 { margin-top: 0; font-size: 1.2rem; border-bottom: 1px solid #475569; padding-bottom: 15px; }
+        input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #475569; background: #1e293b; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-top: 10px; }
+        button:disabled { background: #64748b; }
+        
+        /* トースト通知のスタイル */
+        #toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: #10b981; color: white; padding: 12px 24px; border-radius: 50px;
+            font-weight: bold; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 1000;
+        }
+        #toast.show { opacity: 1; top: 40px; }
     </style>
 </head>
 <body>
+    <div id="toast">反映完了！</div>
     <div class="form-box">
         <h2>AIツール新規登録</h2>
         <form id="aiForm" onsubmit="event.preventDefault(); saveData();">
