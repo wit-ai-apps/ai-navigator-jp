@@ -3,69 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Navigator JP - 世界のAI 100選</title>
+    <title>AI Navigator JP | 2026</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // なべちょうさんの最新Firebase設定
         const firebaseConfig = {
             apiKey: "AIzaSyC990U7XauADarvkUw-WDM7_NMNssp6x2U",
             authDomain: "ai-navigator-jp.firebaseapp.com",
             projectId: "ai-navigator-jp",
             storageBucket: "ai-navigator-jp.firebasestorage.app",
             messagingSenderId: "533690073056",
-            appId: "1:533690073056:web:41da64545b73f14fcd3585",
-            measurementId: "G-XVCPCLRX1W"
+            appId: "1:533690073056:web:41da64545b73f14fcd3585"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        onSnapshot(query(collection(db, "tools"), orderBy("rank", "asc")), (snap) => {
-            const list = document.getElementById('itemList');
-            if (snap.empty) {
-                list.innerHTML = "<div style='grid-column: 1/-1; text-align:center; padding:50px;'><h3>データベース接続成功：データ待ち</h3><p>admin.htmlからAIを追加してください。</p></div>";
-                return;
-            }
-            list.innerHTML = snap.docs.map(doc => {
-                const d = doc.data();
+        const renderCards = (data) => {
+            const container = document.getElementById('ai-container');
+            container.innerHTML = data.map(doc => {
+                const item = doc.data();
+                const isS = item.rank === 'S';
                 return `
-                    <article class="card ${d.rank === 'S' ? 'gold' : ''}">
-                        <div class="head">
-                            <img src="https://www.google.com/s2/favicons?domain=${d.url}" class="logo">
-                            <h3>${d.name}</h3>
+                    <div class="ai-card ${isS ? 's-rank' : ''}">
+                        <div class="card-header">
+                            <span class="rank-badge">${isS ? '🏆 S Rank' : 'A Rank'}</span>
+                            <span class="price-tag">${item.price || '料金不明'}</span>
                         </div>
-                        <p class="desc">${d.desc}</p>
-                        <div class="specs">
-                            <span>おすすめ: ★ ${d.stars || '4.0'}</span> | <span>価格: ${d.price || '無料〜'}</span>
+                        <h3>${item.name}</h3>
+                        <p class="short-desc">${item.desc}</p>
+                        <div class="details-content" id="detail-${doc.id}">
+                            ${item.detail_html || '<p>詳細情報は準備中です。</p>'}
                         </div>
-                        <div class="footer-links">
-                            <a href="${d.aff_url || d.url}" target="_blank" class="btn">公式サイト</a>
-                            ${d.openrouter_id ? `<a href="https://openrouter.ai/b/${d.openrouter_id}?referral=nabecho" target="_blank" class="btn-sub">OpenRouter</a>` : ''}
+                        <div class="btn-group">
+                            <a href="${item.url}" target="_blank" class="btn btn-primary">公式サイト</a>
+                            <a href="https://openrouter.ai/models/${item.openrouter_id}" target="_blank" class="btn btn-outline">OpenRouter</a>
                         </div>
-                    </article>
+                        <button class="expand-btn" onclick="document.getElementById('detail-${doc.id}').classList.toggle('show')">
+                            詳細・評価を読む
+                        </button>
+                    </div>
                 `;
             }).join('');
-        });
+        };
+
+        const q = query(collection(db, "tools"), orderBy("timestamp", "desc"));
+        onSnapshot(q, (snapshot) => renderCards(snapshot.docs));
     </script>
     <style>
-        :root { --primary: #1e40af; --accent: #2563eb; --bg: #f3f4f6; }
-        body { font-family: 'Hiragino Sans', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
-        header { text-align: center; padding: 40px 0; border-bottom: 2px solid #e5e7eb; margin-bottom: 30px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; max-width: 1400px; margin: 0 auto; }
-        .card { background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; display: flex; flex-direction: column; transition: 0.3s; }
-        .card.gold { border: 2px solid #fbbf24; background: #fffdf5; box-shadow: 0 4px 15px rgba(251, 191, 36, 0.1); }
-        .head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-        .logo { width: 28px; height: 28px; border-radius: 4px; }
-        .desc { font-size: 0.88rem; color: #4b5563; height: 4.8em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; margin-bottom: 15px; }
-        .footer-links { display: flex; gap: 8px; margin-top: auto; }
-        .btn { flex: 1; text-align: center; background: var(--primary); color: #fff; padding: 10px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 0.85rem; }
-        .btn-sub { flex: 1; text-align: center; background: #fff; color: var(--primary); border: 1px solid var(--primary); padding: 10px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 0.85rem; }
+        :root {
+            --bg: #0f172a; --card-bg: #1e293b;
+            --neon-blue: #38bdf8; --neon-purple: #c084fc; --neon-gold: #fbbf24;
+            --text: #f1f5f9;
+        }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; }
+        
+        /* Header & Filters */
+        header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid #334155; }
+        .filter-section { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0; padding: 15px; background: #1e293b; border-radius: 12px; }
+        .filter-group { display: flex; align-items: center; gap: 10px; }
+        .chip { padding: 6px 12px; border-radius: 20px; border: 1px solid var(--neon-blue); font-size: 0.8rem; cursor: pointer; transition: 0.3s; }
+        .chip:hover { background: var(--neon-blue); color: var(--bg); }
+
+        /* AI Cards */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 25px; margin-top: 20px; }
+        .ai-card {
+            background: var(--card-bg); border-radius: 16px; padding: 20px; position: relative;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.2);
+            transition: transform 0.3s, box-shadow 0.3s; overflow: hidden;
+        }
+        .ai-card:hover { transform: translateY(-5px); box-shadow: 0 0 25px rgba(56, 189, 248, 0.3); }
+        .ai-card.s-rank { border-color: var(--neon-gold); box-shadow: 0 0 15px rgba(251, 191, 36, 0.2); }
+        
+        .rank-badge { font-size: 0.7rem; font-weight: bold; text-transform: uppercase; color: var(--neon-blue); }
+        .s-rank .rank-badge { color: var(--neon-gold); }
+        
+        h3 { margin: 15px 0 10px; font-size: 1.4rem; color: #fff; }
+        .short-desc { font-size: 0.9rem; line-height: 1.6; color: #cbd5e1; height: 4.8em; overflow: hidden; }
+        
+        /* Expandable Details */
+        .details-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-out; font-size: 0.85rem; border-top: 1px solid #334155; margin-top: 10px; padding-top: 0; }
+        .details-content.show { max-height: 1000px; padding-top: 15px; }
+        .details-content h3 { font-size: 1rem; color: var(--neon-blue); margin-bottom: 5px; }
+        .details-content ul { padding-left: 20px; }
+
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        .btn { flex: 1; padding: 10px; border-radius: 8px; text-decoration: none; text-align: center; font-weight: bold; font-size: 0.85rem; transition: 0.3s; }
+        .btn-primary { background: var(--neon-blue); color: var(--bg); }
+        .btn-outline { border: 1px solid var(--neon-blue); color: var(--neon-blue); }
+        .expand-btn { width: 100%; background: none; border: none; color: #94a3b8; cursor: pointer; margin-top: 15px; font-size: 0.8rem; }
     </style>
 </head>
 <body>
-    <header><h1>AI Navigator <span style="color:var(--accent);">JP</span></h1><p>【v25.1.0】Database Linked</p></header>
-    <main class="grid" id="itemList">読込中...</main>
+    <header>
+        <h1 style="font-size: 1.5rem; margin: 0;">AI Navigator <span style="color: var(--neon-blue);">JP</span></h1>
+        <div class="btn-group" style="margin: 0;">
+            <a href="https://openrouter.ai/" target="_blank" class="btn btn-outline" style="padding: 5px 15px;">OpenRouter Sign-in</a>
+        </div>
+    </header>
+
+    <div class="filter-section">
+        <div class="filter-group">
+            <span>料金:</span>
+            <div class="chip">Free</div><div class="chip">~$20</div><div class="chip">~$30</div><div class="chip">Enterprise</div>
+        </div>
+        <div class="filter-group" style="margin-left: 20px;">
+            <span>形態:</span>
+            <div class="chip">個人</div><div class="chip">グループ</div><div class="chip">会社</div>
+        </div>
+    </div>
+
+    <div id="ai-container" class="grid">
+        </div>
 </body>
 </html>
