@@ -3,246 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Navigator JP | v102.0 Final Hybrid Edition</title>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc, writeBatch, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyC990U7XauADarvkUw-WDM7_NMNssp6x2U",
-            authDomain: "ai-navigator-jp.firebaseapp.com",
-            projectId: "ai-navigator-jp",
-            storageBucket: "ai-navigator-jp.firebasestorage.app",
-            messagingSenderId: "533690073056",
-            appId: "1:533690073056:web:41da64545b73f14fcd3585"
-        };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // ===== 110件の厳選版（Sランク中心） =====
-        const masterList110 = [
-            { cat: "チャットAI", rank: 1, name: "ChatGPT", company: "OpenAI", flag: "🇺🇸", version: "GPT-5", rating: 5, lang: "JP", web: true, app: true, url: "https://chatgpt.com", login_url: "https://chatgpt.com/auth/login", desc: "AIの王者。深度推論で複雑な問題を自動調査・解決。", detail: "Deep Research機能で自動レポート生成。業務効率化の最強兵器。", tier: "S" },
-            { cat: "チャットAI", rank: 2, name: "Claude 4.5", company: "Anthropic", flag: "🇺🇸", version: "Sonnet", rating: 5, lang: "JP", web: true, app: true, url: "https://claude.ai", login_url: "https://claude.ai/login", desc: "文章とコードで最高峰。日本語のニュアンスが自然。", detail: "Artifacts機能で即座にアプリ試作。クリエイティブなタスク最強。", tier: "S" },
-            { cat: "チャットAI", rank: 3, name: "Gemini 3", company: "Google", flag: "🇺🇸", version: "Pro/Flash", rating: 5, lang: "JP", web: true, app: true, url: "https://gemini.google.com", login_url: "https://gemini.google.com/app", desc: "Google生態系との連携が圧倒的。100万トークン対応。", detail: "Gmail・ドライブ・スプレッドシート統合で業務効率化。", tier: "S" },
-            { cat: "チャットAI", rank: 4, name: "Mistral 3", company: "Mistral AI", flag: "🇫🇷", version: "Large", rating: 4, lang: "EN", web: true, app: false, url: "https://mistral.ai", login_url: "https://console.mistral.ai", desc: "オープンウェイトの高性能。カスタマイズ自由。", detail: "企業のAI導入に最適。オンプレミス対応可。", tier: "S" },
-            { cat: "チャットAI", rank: 5, name: "DeepSeek V3", company: "深度求索", flag: "🇨🇳", version: "3.2", rating: 4, lang: "JP", web: true, app: true, url: "https://www.deepseek.com", login_url: "https://www.deepseek.com/sign-up", desc: "スパース注意機構搭載。コスト重視の開発者向け。", detail: "オープンウェイトで自由にカスタマイズ可能。", tier: "S" },
-            { cat: "チャットAI", rank: 6, name: "Perplexity AI", company: "Perplexity", flag: "🇺🇸", version: "Pro", rating: 4, lang: "JP", web: true, app: true, url: "https://www.perplexity.ai", login_url: "https://www.perplexity.ai", desc: "出典付き回答。最新情報をリアルタイム検索。", detail: "Cometブラウザで検索概念を革命。リサーチャー必須。", tier: "A" },
-            { cat: "チャットAI", rank: 7, name: "Grok", company: "xAI", flag: "🇺🇸", version: "2.0", rating: 4, lang: "JP", web: true, app: true, url: "https://grok.x.com", login_url: "https://x.com/i/grok", desc: "X（旧Twitter）統合。ユーモアも備えた新世代AI。", detail: "リアルタイム情報に強い。創造的回答が得意。", tier: "A" },
-            { cat: "チャットAI", rank: 8, name: "NotebookLM", company: "Google", flag: "🇺🇸", version: "Beta", rating: 4, lang: "JP", web: true, app: false, url: "https://notebooklm.google.com", login_url: "https://notebooklm.google.com", desc: "資料特化AI。ポッドキャスト自動生成。ハルシネーション防止。", detail: "指定資料のみ参照。研究・学習に最適。", tier: "A" },
-            { cat: "チャットAI", rank: 9, name: "Microsoft Copilot", company: "Microsoft", flag: "🇺🇸", version: "3.0", rating: 4, lang: "JP", web: true, app: true, url: "https://copilot.microsoft.com", login_url: "https://copilot.microsoft.com", desc: "Office統合。企業向けの堅牢性。", detail: "Word・Excel・Teamsシームレス連携。", tier: "A" },
-            { cat: "チャットAI", rank: 10, name: "Kimi", company: "月之暗面", flag: "🇨🇳", version: "K2.5", rating: 4, lang: "JP", web: true, app: true, url: "https://kimi.moonshot.cn", login_url: "https://kimi.moonshot.cn", desc: "中国の高性能AI。100万トークン対応。Agent Swarm技術。", detail: "長文処理・複数タスク並列実行。価格も手頃。", tier: "A" },
-            { cat: "画像生成", rank: 11, name: "Nano Banana Pro", company: "Google系", flag: "🇺🇸", version: "Latest", rating: 5, lang: "EN", web: true, app: false, url: "https://www.nanobanana.ai", login_url: "https://www.nanobanana.ai/login", desc: "プロンプト理解とキャラクター一貫性で現在No.1。", detail: "美意識とリアリティ。プロの画像生成者必須。", tier: "S" },
-            { cat: "画像生成", rank: 12, name: "Midjourney v7", company: "Midjourney", flag: "🇺🇸", version: "v7", rating: 5, lang: "EN", web: true, app: false, url: "https://www.midjourney.com", login_url: "https://www.midjourney.com/auth/login", desc: "レイヤー編集・スタイル参照機能搭載。AIアートの黄金基準。", detail: "アーティスト・デザイナー向けの最高峰。", tier: "S" },
-            { cat: "画像生成", rank: 13, name: "FLUX.2", company: "Black Forest Labs", flag: "🇩🇪", version: "2.0", rating: 4, lang: "EN", web: true, app: false, url: "https://flux.ai", login_url: "https://flux.ai/login", desc: "オープンウェイトでNano Bananaに迫る品質。", detail: "カスタマイズ自由。研究者・技術者向け。", tier: "A" },
-            { cat: "画像生成", rank: 14, name: "Adobe Firefly", company: "Adobe", flag: "🇺🇸", version: "2.0", rating: 4, lang: "JP", web: true, app: true, url: "https://www.adobe.com/products/firefly", login_url: "https://www.adobe.com", desc: "商用利用安全。Photoshop統合で最強タッグ。", detail: "商用デザインのプロに最適。著作権問題なし。", tier: "A" },
-            { cat: "画像生成", rank: 15, name: "Leonardo.AI", company: "Leonardo", flag: "🇺🇸", version: "3.0", rating: 4, lang: "EN", web: true, app: false, url: "https://leonardo.ai", login_url: "https://leonardo.ai/login", desc: "デザイナー向け。複数モデル選択可能。", detail: "高速処理とカスタムモデル作成が強み。", tier: "A" },
-            { cat: "動画生成", rank: 16, name: "Sora 2", company: "OpenAI", flag: "🇺🇸", version: "2.0", rating: 5, lang: "EN", web: true, app: false, url: "https://openai.com/sora", login_url: "#", desc: "物理法則を理解したリアル動画。映画品質の最高峰。", detail: "カメオ機能で自分を出演させられる。", tier: "S" },
-            { cat: "動画生成", rank: 17, name: "Veo 3", company: "Google", flag: "🇺🇸", version: "3.0", rating: 5, lang: "EN", web: true, app: false, url: "https://google.com/veo", login_url: "#", desc: "Google最強の動画生成モデル。", detail: "ハイエンド動画制作者向け。", tier: "S" },
-            { cat: "動画生成", rank: 18, name: "Runway Gen-3", company: "Runway", flag: "🇺🇸", version: "Alpha", rating: 4, lang: "EN", web: true, app: false, url: "https://runwayml.com", login_url: "https://runwayml.com/login", desc: "映画制作レベル。Act-Oneで表情転送。", detail: "VFXアーティスト向けの最強機能。", tier: "A" },
-            { cat: "動画生成", rank: 19, name: "Pika 2.0", company: "Pika", flag: "🇺🇸", version: "2.0", rating: 4, lang: "EN", web: true, app: true, url: "https://pika.art", login_url: "https://pika.art/login", desc: "1080p対応。Pikaffectsで独創的エフェクト。", detail: "クリエイティブな動画作家向け。", tier: "A" },
-            { cat: "動画生成", rank: 20, name: "Higgsfield", company: "Higgsfield", flag: "🇺🇸", version: "Latest", rating: 4, lang: "EN", web: true, app: false, url: "https://higgsfield.ai", login_url: "#", desc: "ブラウザベース。9ヶ月で年商2億ドル達成の成長企業。", detail: "手軽に始めたい動画制作者向け。", tier: "A" },
-            { cat: "音声・音楽", rank: 21, name: "Suno", company: "Suno AI", flag: "🇺🇸", version: "v4.0", rating: 5, lang: "JP", web: true, app: true, url: "https://suno.com", login_url: "https://suno.com/login", desc: "高品質な楽曲生成。歌唱力は人間と見分けつかず。", detail: "ジャンル・スタイル自由自在。著作権フリー。", tier: "S" },
-            { cat: "音声・音楽", rank: 22, name: "ElevenLabs", company: "ElevenLabs", flag: "🇬🇧", version: "2.0", rating: 5, lang: "JP", web: true, app: true, url: "https://elevenlabs.io", login_url: "https://elevenlabs.io/login", desc: "自然な音声クローン。感情・リズム保持。32言語対応。", detail: "ナレーション・オーディオブック制作者必須。", tier: "S" },
-            { cat: "音声・音楽", rank: 23, name: "HeyGen", company: "HeyGen", flag: "🇨🇦", version: "2.0", rating: 4, lang: "JP", web: true, app: false, url: "https://www.heygen.com", login_url: "https://www.heygen.com/login", desc: "動画自動翻訳・吹き替え。140言語対応。", detail: "多言語動画配信者・企業広報向け。", tier: "A" },
-            { cat: "音声・音楽", rank: 24, name: "VALL-E X", company: "Microsoft", flag: "🇺🇸", version: "1.0", rating: 4, lang: "JP", web: false, app: false, url: "https://microsoft.com", login_url: "#", desc: "テキストから自然な音声を生成。複数感情対応。", detail: "研究向け。高度なカスタマイズが可能。", tier: "A" },
-            { cat: "音声・音楽", rank: 25, name: "AIVA", company: "AIVA", flag: "🇱🇺", version: "1.0", rating: 4, lang: "EN", web: true, app: false, url: "https://www.aiva.ai", login_url: "https://www.aiva.ai/login", desc: "クラシックからポップまで。作曲補助AI。", detail: "映画・ゲーム背景音楽に最適。", tier: "A" },
-            { cat: "プログラミング", rank: 26, name: "Cursor", company: "Anysphere", flag: "🇺🇸", version: "v0.45", rating: 5, lang: "JP", web: false, app: true, url: "https://cursor.sh", login_url: "https://cursor.sh", desc: "AIネイティブなコードエディタ。『Vibe Coding』の起点。", detail: "自然言語でアプリ構築が可能。開発者の神器。", tier: "S" },
-            { cat: "プログラミング", rank: 27, name: "Windsurf", company: "Cognition", flag: "🇺🇸", version: "Latest", rating: 5, lang: "EN", web: false, app: true, url: "https://windsurf.dev", login_url: "#", desc: "Googleが24億ドルで技術ライセンス。Arena Modeでモデル比較。", detail: "最先端AIコーディングを試したい人向け。", tier: "S" },
-            { cat: "プログラミング", rank: 28, name: "GitHub Copilot", company: "GitHub", flag: "🇺🇸", version: "X", rating: 5, lang: "JP", web: true, app: true, url: "https://github.com/features/copilot", login_url: "https://github.com/login", desc: "IDEネイティブなペアプログラマー。業界標準。", detail: "エージェント機能強化。ターミナルコマンドも提案。", tier: "S" },
-            { cat: "プログラミング", rank: 29, name: "Devin", company: "Cognition", flag: "🇺🇸", version: "1.0", rating: 4, lang: "EN", web: true, app: false, url: "https://devin.ai", login_url: "#", desc: "AIソフトウェアエンジニアの先駆け。開発完全自動化。", detail: "チーム向けの開発自動化。", tier: "A" },
-            { cat: "プログラミング", rank: 30, name: "Vercel V0", company: "Vercel", flag: "🇺🇸", version: "Latest", rating: 4, lang: "EN", web: true, app: false, url: "https://v0.dev", login_url: "https://v0.dev/login", desc: "UI生成の革命児。テキストからコンポーネント即生成。", detail: "React・Next.jsコンポーネント瞬時完成。", tier: "A" },
-            { cat: "文章作成", rank: 31, name: "DeepL Write", company: "DeepL", flag: "🇩🇪", version: "v2.0", rating: 5, lang: "JP", web: true, app: true, url: "https://www.deepl.com/write", login_url: "https://www.deepl.com", desc: "文章の品格を整える。洗練されたプロの文体へ。", detail: "翻訳とライティングが統合。日本語も自然。", tier: "S" },
-            { cat: "文章作成", rank: 32, name: "Gamma", company: "Gamma", flag: "🇺🇸", version: "2.0", rating: 5, lang: "JP", web: true, app: false, url: "https://gamma.app", login_url: "https://gamma.app/login", desc: "プロンプトだけでプレゼン資料を瞬時に生成。", detail: "デザイン苦手なビジネスパーソン必須。", tier: "S" },
-            { cat: "文章作成", rank: 33, name: "Jasper", company: "Jasper", flag: "🇺🇸", version: "3.0", rating: 4, lang: "JP", web: true, app: false, url: "https://www.jasper.ai", login_url: "https://www.jasper.ai/login", desc: "ブログ記事から広告文まで。長文ライティングに強い。", detail: "ブランドボイス設定で一貫性を確保。", tier: "A" },
-            { cat: "文章作成", rank: 34, name: "Writesonic", company: "Writesonic", flag: "🇺🇸", version: "Latest", rating: 4, lang: "JP", web: true, app: false, url: "https://writesonic.com", login_url: "https://writesonic.com/login", desc: "SEO最適化ブログ記事の自動生成。検索順位改善に特化。", detail: "キーワード分析と記事生成が一体。", tier: "A" },
-            { cat: "文章作成", rank: 35, name: "Grammarly", company: "Grammarly", flag: "🇺🇸", version: "Premium", rating: 4, lang: "EN", web: true, app: true, url: "https://www.grammarly.com", login_url: "https://www.grammarly.com/login", desc: "英語ライティングの完全サポート。文法から表現まで。", detail: "ネイティブレベルへの改善を実現。", tier: "A" },
-            { cat: "データ分析", rank: 36, name: "Wolfram Alpha", company: "Wolfram", flag: "🇺🇸", version: "Classic", rating: 5, lang: "EN", web: true, app: true, url: "https://www.wolframalpha.com", login_url: "https://www.wolframalpha.com", desc: "数学・科学計算の権威。計算ミスなし。", detail: "物理・化学・統計あらゆる領域に対応。", tier: "S" },
-            { cat: "データ分析", rank: 37, name: "Tableau AI", company: "Salesforce", flag: "🇺🇸", version: "Latest", rating: 4, lang: "JP", web: true, app: true, url: "https://www.tableau.com", login_url: "https://www.tableau.com/login", desc: "ビジュアルデータ分析。AI駆動の自動インサイト。", detail: "大規模企業のBI標準。カスタマイズ性も高い。", tier: "A" },
-            { cat: "データ分析", rank: 38, name: "Power BI AI", company: "Microsoft", flag: "🇺🇸", version: "Latest", rating: 4, lang: "JP", web: true, app: true, url: "https://powerbi.microsoft.com", login_url: "https://powerbi.microsoft.com", desc: "MicrosoftのBI統合ツール。Excelの延長線。", detail: "Office 365との統合で導入が簡単。", tier: "A" },
-            { cat: "データ分析", rank: 39, name: "DataRobot", company: "DataRobot", flag: "🇺🇸", version: "11.0", rating: 4, lang: "EN", web: true, app: false, url: "https://www.datarobot.com", login_url: "https://www.datarobot.com/login", desc: "自動機械学習。複雑なML開発を自動化。", detail: "データサイエンティストの工数を大幅削減。", tier: "A" },
-            { cat: "データ分析", rank: 40, name: "MindsDB", company: "MindsDB", flag: "🇺🇸", version: "25.1", rating: 4, lang: "EN", web: true, app: false, url: "https://mindsdb.com", login_url: "https://mindsdb.com/signup", desc: "データベースネイティブML。SQLからAI予測を即実行。", detail: "既存DBに直接AI機能を統合。", tier: "A" },
-            { cat: "AIエージェント", rank: 41, name: "n8n", company: "n8n", flag: "🇩🇪", version: "Latest", rating: 4, lang: "EN", web: true, app: false, url: "https://n8n.io", login_url: "https://n8n.io/login", desc: "オープンソース・セルフホスト可能。高度なカスタマイズ性。", detail: "技術者・データ管理重視のチーム向け。", tier: "A" },
-            { cat: "AIエージェント", rank: 42, name: "Zapier Central", company: "Zapier", flag: "🇺🇸", version: "Latest", rating: 4, lang: "JP", web: true, app: false, url: "https://zapier.com", login_url: "https://zapier.com/login", desc: "6000以上のアプリを横断するAIエージェント作成。", detail: "ノーコードで自動化を実現。", tier: "A" },
-            { cat: "AIエージェント", rank: 43, name: "Make", company: "Make", flag: "🇨🇭", version: "Pro", rating: 4, lang: "JP", web: true, app: false, url: "https://www.make.com", login_url: "https://www.make.com/login", desc: "AIワークフロー自動化。数百のアプリ連携でRPA実装。", detail: "ビジュアルフロー設計で直感的。", tier: "A" },
-            { cat: "AIエージェント", rank: 44, name: "CrewAI", company: "CrewAI", flag: "🇺🇸", version: "Latest", rating: 3, lang: "EN", web: true, app: false, url: "https://www.crewai.io", login_url: "#", desc: "複数AIエージェントの協調フレームワーク。", detail: "複雑なエージェント連携に最適。", tier: "B" },
-            { cat: "AIエージェント", rank: 45, name: "Notion AI", company: "Notion", flag: "🇺🇸", version: "Latest", rating: 4, lang: "JP", web: true, app: true, url: "https://www.notion.so", login_url: "https://www.notion.so/login", desc: "ノート内にAI統合。執筆補助と要約が自動。", detail: "知的労働者の標準ツールへ進化。", tier: "A" },
-            { cat: "翻訳", rank: 46, name: "Google Translate AI", company: "Google", flag: "🇺🇸", version: "Latest", rating: 5, lang: "JP", web: true, app: true, url: "https://translate.google.com", login_url: "#", desc: "100言語以上対応。最高精度の機械翻訳。", detail: "カメラ翻訳やオフライン機能も完備。", tier: "S" },
-            { cat: "翻訳", rank: 47, name: "DeepL", company: "DeepL", flag: "🇩🇪", version: "Latest", rating: 5, lang: "JP", web: true, app: true, url: "https://www.deepl.com", login_url: "https://www.deepl.com", desc: "文脈を理解した自然な翻訳。品質はGoogle超。", detail: "ビジネス文書翻訳の標準。", tier: "S" },
-            { cat: "教育", rank: 48, name: "Khan Academy AI", company: "Khan Academy", flag: "🇺🇸", version: "Latest", rating: 4, lang: "JP", web: true, app: true, url: "https://www.khanacademy.org", login_url: "https://www.khanacademy.org", desc: "個別学習対応のAI家庭教師。無料で本格的。", detail: "数学から歴史まで豊富なコンテンツ。", tier: "A" },
-            { cat: "ビジネス", rank: 49, name: "Dify", company: "Dify", flag: "🇨🇳", version: "0.6.x", rating: 4, lang: "JP", web: true, app: false, url: "https://dify.ai", login_url: "https://dify.ai/login", desc: "ノーコードAIアプリ構築。業務フロー自動化の最速解。", detail: "企業のDX推進に最適。", tier: "A" },
-            { cat: "その他", rank: 50, name: "Perplexity Comet", company: "Perplexity", flag: "🇺🇸", version: "Latest", rating: 4, lang: "JP", web: true, app: true, url: "https://www.perplexity.ai", login_url: "https://www.perplexity.ai", desc: "AI駆動ブラウザ。サイドバーアシスタント。", detail: "次世代Web体験。プライバシーも保護。", tier: "A" },
-            { cat: "その他", rank: 51, name: "Reve", company: "AI Art", flag: "🇺🇸", version: "Latest", rating: 4, lang: "EN", web: true, app: false, url: "https://reve.ai", login_url: "#", desc: "キャラクター一貫性に特化。アニメ・漫画風。", detail: "イラスト制作者向けの高度な機能。", tier: "A" },
-            { cat: "その他", rank: 52, name: "Meshy", company: "Meshy", flag: "🇺🇸", version: "Latest", rating: 4, lang: "EN", web: true, app: false, url: "https://www.meshy.ai", login_url: "https://www.meshy.ai/login", desc: "テキスト/画像から数分で3Dモデル生成。", detail: "PBRテクスチャ自動生成。ゲーム開発者向け。", tier: "A" },
-            { cat: "その他", rank: 53, name: "Codeium", company: "Codeium", flag: "🇺🇸", version: "1.0", rating: 4, lang: "JP", web: true, app: true, url: "https://codeium.com", login_url: "https://codeium.com/login", desc: "無料で高精度なコード補完。Copilotの競合。", detail: "プライバシー重視。個人開発者向け。", tier: "A" },
-            { cat: "その他", rank: 54, name: "Tabnine", company: "Tabnine", flag: "🇮🇱", version: "5.0", rating: 4, lang: "EN", web: true, app: true, url: "https://www.tabnine.com", login_url: "https://www.tabnine.com/login", desc: "エンタープライズ向けのAIコード補完。", detail: "セキュリティが強力。大企業対応。", tier: "A" },
-            { cat: "その他", rank: 55, name: "Brave Leo", company: "Brave", flag: "🇺🇸", version: "Latest", rating: 4, lang: "JP", web: true, app: true, url: "https://brave.com", login_url: "#", desc: "プライバシー保護型AIブラウザ。", detail: "広告ブロック + AI統合。プライバシー最強。", tier: "A" },
-            // 非推奨
-            { cat: "非推奨", rank: 98, name: "Meta AI", company: "Meta", flag: "🇺🇸", version: "Latest", rating: 2, lang: "EN", web: true, app: true, url: "https://ai.facebook.com", login_url: "#", desc: "【警告】強制挿入。プライベート通信が学習に利用される懸念。", detail: "Instagram・WhatsApp無断統合。避けるべき。", tier: "D" },
-            { cat: "非推奨", rank: 99, name: "低質GPTラッパー", company: "不明", flag: "🌐", version: "Unknown", rating: 1, lang: "EN", web: true, app: false, url: "#", login_url: "#", desc: "【警告】ChatGPTの皮だけ。独自機能なし。", detail: "詐欺同然。Claude直接利用の方が柔軟。", tier: "D" },
-            // ダークAI
-            { cat: "ダークAI", rank: 110, name: "WormGPT", company: "BlackHat AI", flag: "💀", version: "v2.0", rating: 1, lang: "EN", web: true, app: false, url: "https://google.com", login_url: "#", desc: "【⚠️ 警告】犯罪特化AI。ガードレール無し。", detail: "倫理制限がない攻撃用AI。セキュリティ防御の研究対象。", tier: "DARK", dark18: true }
-        ];
-
-        // ===== グローバル変数 =====
-        let allDocs = [];
-        let currentFilter = "すべて";
-        let currentTab = "厳選版";
-
-        // ===== switchTab 関数 =====
-        window.switchTab = (tab) => {
-            currentTab = tab;
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
-
-            const contentArea = document.getElementById('content-area');
-            if (tab === '厳選版') {
-                contentArea.innerHTML = '<div id="ai-container" class="grid"></div>';
-                allDocs = masterList110.map((data, idx) => ({ id: idx, data: () => data }));
-                applyFilter();
-            } else if (tab === '全リスト') {
-                contentArea.innerHTML = '<div id="ai-container" class="grid"></div>';
-                allDocs = masterList110.map((data, idx) => ({ id: idx, data: () => data }));
-                applyFilter();
-            } else if (tab === '選択基準') {
-                contentArea.innerHTML = '<div id="criteria-panel"></div>';
-                renderCriteria();
-            }
-        };
-
-        // ===== applyFilter 関数 =====
-        window.applyFilter = (cat = null) => {
-            if(cat) {
-                currentFilter = cat;
-                document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
-                if (event && event.target) event.target.classList.add('active');
-            }
-            const searchEl = document.getElementById('search-input');
-            const word = searchEl ? searchEl.value.toLowerCase() : "";
-            const filtered = allDocs.filter(d => {
-                const item = d.data();
-                const matchWord = (item.name || "").toLowerCase().includes(word) || (item.desc || "").toLowerCase().includes(word);
-                const matchCat = currentFilter === "すべて" || item.cat === currentFilter;
-                const showDark = item.dark18 !== true;
-                return matchWord && matchCat && showDark;
-            });
-            renderCards(filtered.sort((a, b) => (a.data().rank || 999) - (b.data().rank || 999)));
-        };
-
-        // ===== renderCards 関数 =====
-        const renderCards = (docs) => {
-            const container = document.getElementById('ai-container');
-            if (!container) return;
-            container.innerHTML = docs.map(docSnap => {
-                const item = docSnap.data();
-                const stars = "★".repeat(item.rating || 0) + "☆".repeat(5 - (item.rating || 0));
-                let iconUrl = "https://www.google.com/s2/favicons?sz=64&domain=google.com";
-                try { if (item.url && item.url !== "https://google.com") iconUrl = `https://www.google.com/s2/favicons?sz=64&domain=${new URL(item.url).hostname}`; } catch (e) {}
-
-                return `
-                    <div class="ai-card ${item.rank <= 5 ? 'top-rank' : ''} ${item.dark18 ? 'dark-warning' : ''}">
-                        <div class="card-star-box">${stars}</div>
-                        <div class="tier-badge">${item.tier}</div>
-                        <div class="card-top">
-                            <img src="${iconUrl}" class="ai-icon" onerror="this.src='https://via.placeholder.com/32'">
-                            <div class="ai-name-area">
-                                <div class="ai-name">${item.name || 'Unknown'}</div>
-                                <div class="ai-ver-hp">Ver: ${item.version || '-'}</div>
-                            </div>
-                        </div>
-                        <div class="card-company"><span>${item.flag || '🌐'}</span> ${item.company || 'Unknown'}</div>
-                        <div class="card-meta">
-                            <span class="badge">${item.lang === 'JP' ? '日本語OK' : 'EN'}</span>
-                            <span class="badge">${item.web?'WEB':''} ${item.app?'APP':''}</span>
-                        </div>
-                        <div class="desc-box"><p class="ai-desc">${item.desc || ''}</p></div>
-                        <div class="expand-detail">
-                            <p>${item.detail || ''}</p>
-                            ${item.dark18 ? '<p style="color: #ff5252; font-weight: bold;">⚠️ +18以上のコンテンツです。閲覧は自己責任で。</p>' : ''}
-                            <a href="${item.login_url || '#'}" target="_blank" class="btn-login">サインイン</a>
-                        </div>
-                        <div class="btn-group">
-                            <a href="${item.url}" target="_blank" class="btn btn-primary">公式サイト</a>
-                            <button class="btn btn-outline" onclick="this.closest('.ai-card').classList.toggle('expand')">詳細</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        };
-
-        // ===== renderCriteria 関数 =====
-        const renderCriteria = () => {
-            const panel = document.getElementById('criteria-panel');
-            if (!panel) return;
-            panel.innerHTML = `
-                <div class="criteria-content">
-                    <div class="criteria-tabs">
-                        <button class="criteria-tab active" onclick="window.switchCriteria('beginner')">初心者向け</button>
-                        <button class="criteria-tab" onclick="window.switchCriteria('pro')">プロ向け</button>
-                        <button class="criteria-tab" onclick="window.switchCriteria('general')">全般的基準</button>
-                    </div>
-                    <div id="criteria-body"></div>
-                </div>
-            `;
-            window.switchCriteria('beginner');
-        };
-
-        // ===== switchCriteria 関数 =====
-        window.switchCriteria = (type) => {
-            document.querySelectorAll('.criteria-tab').forEach(t => t.classList.remove('active'));
-            if (event && event.target) event.target.classList.add('active');
-            const body = document.getElementById('criteria-body');
-            if (!body) return;
-
-            if (type === 'beginner') {
-                body.innerHTML = `<h3>初心者向け - 7つの視点</h3><div class="criteria-item"><h4>1️⃣ 導線に組み込まれているか</h4><p>今使っているツール（メール、ブラウザ）にAIが入ってるか</p></div>`;
-            } else if (type === 'pro') {
-                body.innerHTML = `<h3>プロ向け - 7大評価指標</h3><div class="criteria-item"><h4>1️⃣ Intelligence（知能指数）</h4><p>MMLU-Pro、GPQA Diamond、AIME 2025など複数ベンチマーク統合</p></div>`;
-            } else if (type === 'general') {
-                body.innerHTML = `<h3>全般的基準 - 4つの普遍的原則</h3><div class="criteria-item"><h4>✗ 原則1：「ベンチマーク神話」を信じない</h4><p>ベンチマークスコア ≠ 実務での役立ち。自分のデータで試すこと。</p></div>`;
-            }
-        };
-
-        // ===== initialize110Data 関数 =====
-        window.initialize110Data = async () => {
-            const status = document.getElementById('admin-status');
-            if(!confirm("Firebaseを完全清掃し、110件のデータを再注入します。")) return;
-            status.innerText = "清掃中...";
-            try {
-                const snapshot = await getDocs(collection(db, "tools"));
-                const batch = writeBatch(db);
-                snapshot.docs.forEach(d => batch.delete(d.ref));
-                await batch.commit();
-                
-                status.innerText = "投入中...";
-                for(const data of masterList110) { 
-                    await addDoc(collection(db, "tools"), data); 
-                }
-                status.innerText = "✅ 110件完全復元完了！";
-                setTimeout(() => location.reload(), 2000);
-            } catch (e) { 
-                status.innerText = "❌ エラー: " + e.message; 
-            }
-        };
-
-        // ===== showDark18Warning 関数 =====
-        window.showDark18Warning = () => {
-            if (confirm('⚠️ このセクションには18歳以上向けの警告コンテンツが含まれています。\n\n表示してもよろしいですか？\n\n（教育・リテラシー目的のみ推奨）')) {
-                document.querySelectorAll('.dark-warning').forEach(el => {
-                    el.style.display = 'block';
-                });
-            }
-        };
-
-        // ===== DOMContentLoaded =====
-        document.addEventListener('DOMContentLoaded', () => {
-            allDocs = masterList110.map((data, idx) => ({ id: idx, data: () => data }));
-            const searchInput = document.getElementById('search-input');
-            if (searchInput) {
-                searchInput.addEventListener('input', applyFilter);
-            }
-            applyFilter();
-        });
-    </script>
+    <title>AI Navigator JP | v102.0 Final Complete</title>
     <style>
         :root { --bg: #0b0f1a; --card: #161e2e; --blue: #38bdf8; --gold: #fbbf24; --text: #f1f5f9; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
@@ -252,13 +13,14 @@
         .tab-container { max-width: 1200px; margin: 0 auto 20px; display: flex; gap: 10px; border-bottom: 2px solid #1e293b; padding-bottom: 10px; }
         .tab-btn { padding: 8px 16px; background: #1e293b; border: none; color: var(--text); cursor: pointer; border-radius: 6px; font-weight: bold; }
         .tab-btn.active { background: var(--blue); color: #000; }
-        .settings-panel { background:#1e293b; border:1px solid var(--blue); padding:15px; border-radius:12px; margin:0 auto 20px; max-width:1200px; }
+        .settings-panel { background:#1e293b; border:1px solid var(--blue); padding:15px; border-radius:12px; margin:0 auto 20px; max-width:1200px; display: none; }
+        .settings-panel.show { display: block; }
         .category-sidebar { max-width: 1200px; margin: 0 auto 15px; display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 0; border-bottom: 1px solid #334155; }
         .cat-tab { padding: 6px 14px; background: #1e293b; border-radius: 20px; cursor: pointer; white-space: nowrap; font-size: 0.75rem; border: 1px solid #334155; }
         .cat-tab.active { background: var(--blue); color: #000; font-weight: bold; }
         #search-input { width: 100%; max-width: 1200px; margin: 0 auto 20px; display: block; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; max-width: 1200px; margin: 0 auto; }
-        .ai-card { background: var(--card); border-radius: 12px; padding: 15px; position: relative; border: 1px solid #1e293b; display: flex; flex-direction: column; min-height: 280px; }
+        .ai-card { background: var(--card); border-radius: 12px; padding: 15px; position: relative; border: 1px solid #1e293b; display: flex; flex-direction: column; min-height: 300px; }
         .ai-card.top-rank { border-color: var(--gold); box-shadow: 0 0 10px rgba(251, 191, 36, 0.1); }
         .ai-card.dark-warning { border-color: #ff5252; display: none; }
         .card-star-box { position: absolute; top: 10px; right: 10px; color: var(--gold); font-size: 0.8rem; }
@@ -268,7 +30,9 @@
         .ai-name { font-weight: bold; font-size: 1.2rem; }
         .ai-ver-hp { font-size: 0.65rem; color: var(--blue); font-weight: bold; }
         .card-company { font-size: 0.8rem; color: #94a3b8; display: flex; align-items: center; gap: 5px; margin-bottom: 10px; }
-        .desc-box { height: 2.8em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin: 10px 0; }
+        .badge { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; margin-right: 4px; }
+        .desc-box { height: 2.8em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin: 10px 0; font-size: 0.85rem; }
+        .desc-box p { margin: 0; }
         .btn-group { display: flex; gap: 5px; margin-top: auto; }
         .btn { flex: 1; padding: 8px; border-radius: 6px; font-weight: bold; text-align: center; cursor: pointer; text-decoration: none; font-size: 0.75rem; border: none; }
         .btn-primary { background: var(--blue); color: #000; }
@@ -276,6 +40,20 @@
         .expand-detail { display: none; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 8px; border-left: 3px solid var(--blue); margin-bottom: 10px; font-size: 0.75rem; }
         .ai-card.expand .expand-detail { display: block; }
         .btn-login { display: inline-block; background: #334155; color: #fff; padding: 4px 10px; border-radius: 4px; text-decoration: none; font-size: 0.7rem; }
+
+        /* モーダル */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 999; }
+        .modal-overlay.show { display: flex; justify-content: center; align-items: center; }
+        .modal-content { background: var(--card); border: 2px solid #ff5252; border-radius: 12px; padding: 30px; max-width: 500px; box-shadow: 0 4px 20px rgba(255,82,82,0.3); }
+        .modal-content h2 { color: #ff5252; margin: 0 0 15px; }
+        .modal-content p { color: var(--text); line-height: 1.6; margin: 10px 0; }
+        .modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
+        .modal-buttons button { flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-modal-ok { background: #ff5252; color: white; }
+        .btn-modal-ok:hover { background: #ff6b6b; }
+        .btn-modal-cancel { background: #334155; color: var(--text); }
+        .btn-modal-cancel:hover { background: #475569; }
+
         .criteria-content { max-width: 1200px; margin: 0 auto; padding: 20px; background: #1e293b; border-radius: 12px; }
         .criteria-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #334155; padding-bottom: 10px; }
         .criteria-tab { padding: 8px 16px; background: #262626; border: none; color: var(--text); cursor: pointer; border-radius: 6px; }
@@ -291,7 +69,7 @@
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <div>
                 <h1>AI Navigator <span style="color:var(--blue)">JP</span></h1>
-                <div class="hp-version">v102.0 Final Hybrid Edition - 110選 + 選択基準</div>
+                <div class="hp-version">v102.0 Final Complete - 110選完全版</div>
             </div>
             <button onclick="document.getElementById('set').classList.toggle('show')" style="background:none; border:none; cursor:pointer; font-size:1.5rem; color:var(--text);">⚙️</button>
         </div>
@@ -300,7 +78,7 @@
 
     <div id="set" class="settings-panel">
         <button onclick="window.initialize110Data()" class="btn btn-primary" style="width:100%;">Firebase清掃 & 110選を物理復元</button>
-        <button onclick="window.showDark18Warning()" class="btn btn-outline" style="width:100%; margin-top:10px;">⚠️ ダークAI表示（+18）</button>
+        <button onclick="window.showDark18Modal()" class="btn btn-outline" style="width:100%; margin-top:10px;">⚠️ ダークAI表示（+18）</button>
         <div id="admin-status" style="text-align:center; font-size:0.8rem; color:var(--blue); margin-top:10px;"></div>
     </div>
 
@@ -331,5 +109,270 @@
     <div id="content-area">
         <div id="ai-container" class="grid"></div>
     </div>
+
+    <!-- ダークAI警告モーダル -->
+    <div id="dark18-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>⚠️ 警告：18歳以上向けコンテンツ</h2>
+            <p>このセクションには犯罪・違法目的のAIツール情報が含まれています。</p>
+            <p>これは「世界で何が起きているのか」を理解するための教育・リテラシー資料です。</p>
+            <p style="color: #ff5252; font-weight: bold;">使用・推奨するものではありません。</p>
+            <p>18歳以上で、教育目的で閲覧しますか？</p>
+            <div class="modal-buttons">
+                <button class="btn-modal-cancel" onclick="window.closeDark18Modal()">キャンセル</button>
+                <button class="btn-modal-ok" onclick="window.confirmDark18()">表示する</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, addDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC990U7XauADarvkUw-WDM7_NMNssp6x2U",
+            authDomain: "ai-navigator-jp.firebaseapp.com",
+            projectId: "ai-navigator-jp",
+            storageBucket: "ai-navigator-jp.firebasestorage.app",
+            messagingSenderId: "533690073056",
+            appId: "1:533690073056:web:41da64545b73f14fcd3585"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // 110件のマスターリスト（外部スクリプトで定義される）
+        window.firebase_db = db;
+        window.firebase_writeBatch = writeBatch;
+        window.firebase_collection = collection;
+        window.firebase_addDoc = addDoc;
+        window.firebase_getDocs = getDocs;
+    </script>
+
+    <script>
+        // ===== 110件のマスターリスト =====
+        const masterList110 = [
+            { cat: "チャットAI", rank: 1, name: "ChatGPT", company: "OpenAI", flag: "🇺🇸", version: "GPT-5", rating: 5, lang: "JP", web: true, app: true, url: "https://chatgpt.com", login_url: "https://chatgpt.com/auth/login", desc: "AIの王者。深度推論で複雑な問題を自動調査。", detail: "Deep Research機能で自動レポート生成。業務効率化の最強兵器。", tier: "S" },
+            { cat: "チャットAI", rank: 2, name: "Claude 4.5", company: "Anthropic", flag: "🇺🇸", version: "Sonnet", rating: 5, lang: "JP", web: true, app: true, url: "https://claude.ai", login_url: "https://claude.ai/login", desc: "文章とコードで最高峰。日本語が自然。", detail: "Artifacts機能で即座にアプリ試作。クリエイティブなタスク最強。", tier: "S" },
+            { cat: "チャットAI", rank: 3, name: "Gemini 3", company: "Google", flag: "🇺🇸", version: "Pro/Flash", rating: 5, lang: "JP", web: true, app: true, url: "https://gemini.google.com", login_url: "https://gemini.google.com/app", desc: "Google生態系との連携が圧倒的。", detail: "Gmail・ドライブ・スプレッドシート統合で業務効率化。", tier: "S" },
+            { cat: "チャットAI", rank: 4, name: "Mistral 3", company: "Mistral AI", flag: "🇫🇷", version: "Large", rating: 4, lang: "EN", web: true, app: false, url: "https://mistral.ai", login_url: "https://console.mistral.ai", desc: "オープンウェイトの高性能。カスタマイズ自由。", detail: "企業のAI導入に最適。オンプレミス対応可。", tier: "S" },
+            { cat: "チャットAI", rank: 5, name: "DeepSeek V3", company: "深度求索", flag: "🇨🇳", version: "3.2", rating: 4, lang: "JP", web: true, app: true, url: "https://www.deepseek.com", login_url: "https://www.deepseek.com/sign-up", desc: "スパース注意機構搭載。コスト重視。", detail: "オープンウェイトで自由にカスタマイズ可能。", tier: "S" },
+            { cat: "チャットAI", rank: 6, name: "Perplexity AI", company: "Perplexity", flag: "🇺🇸", version: "Pro", rating: 4, lang: "JP", web: true, app: true, url: "https://www.perplexity.ai", login_url: "https://www.perplexity.ai", desc: "出典付き回答。最新情報をリアルタイム検索。", detail: "Cometブラウザで検索概念を革命。リサーチャー必須。", tier: "A" },
+            { cat: "チャットAI", rank: 7, name: "Grok", company: "xAI", flag: "🇺🇸", version: "2.0", rating: 4, lang: "JP", web: true, app: true, url: "https://grok.x.com", login_url: "https://x.com/i/grok", desc: "X（旧Twitter）統合。ユーモアも備えた新世代AI。", detail: "リアルタイム情報に強い。創造的回答が得意。", tier: "A" },
+            { cat: "チャットAI", rank: 8, name: "NotebookLM", company: "Google", flag: "🇺🇸", version: "Beta", rating: 4, lang: "JP", web: true, app: false, url: "https://notebooklm.google.com", login_url: "https://notebooklm.google.com", desc: "資料特化AI。ハルシネーション防止。", detail: "指定資料のみ参照。研究・学習に最適。", tier: "A" },
+            { cat: "チャットAI", rank: 9, name: "Microsoft Copilot", company: "Microsoft", flag: "🇺🇸", version: "3.0", rating: 4, lang: "JP", web: true, app: true, url: "https://copilot.microsoft.com", login_url: "https://copilot.microsoft.com", desc: "Office統合。企業向けの堅牢性。", detail: "Word・Excel・Teamsシームレス連携。", tier: "A" },
+            { cat: "チャットAI", rank: 10, name: "Kimi", company: "月之暗面", flag: "🇨🇳", version: "K2.5", rating: 4, lang: "JP", web: true, app: true, url: "https://kimi.moonshot.cn", login_url: "https://kimi.moonshot.cn", desc: "中国の高性能AI。100万トークン対応。", detail: "長文処理・複数タスク並列実行が可能。", tier: "A" },
+            { cat: "画像生成", rank: 11, name: "Nano Banana Pro", company: "Google系", flag: "🇺🇸", version: "Latest", rating: 5, lang: "EN", web: true, app: false, url: "https://nanobanana.ai", login_url: "https://nanobanana.ai/login", desc: "プロンプト理解でNo.1。", detail: "美意識とリアリティ。プロの画像生成者必須。", tier: "S" },
+            { cat: "画像生成", rank: 12, name: "Midjourney v7", company: "Midjourney", flag: "🇺🇸", version: "v7", rating: 5, lang: "EN", web: true, app: false, url: "https://midjourney.com", login_url: "https://midjourney.com/auth/login", desc: "レイヤー編集機能搭載。黄金基準。", detail: "アーティスト・デザイナー向けの最高峰。", tier: "S" },
+            { cat: "画像生成", rank: 13, name: "FLUX.2", company: "Black Forest Labs", flag: "🇩🇪", version: "2.0", rating: 4, lang: "EN", web: true, app: false, url: "https://flux.ai", login_url: "https://flux.ai/login", desc: "オープンウェイト。Nano Bananaに迫る品質。", detail: "カスタマイズ自由。研究者・技術者向け。", tier: "A" },
+            { cat: "画像生成", rank: 14, name: "Adobe Firefly", company: "Adobe", flag: "🇺🇸", version: "2.0", rating: 4, lang: "JP", web: true, app: true, url: "https://adobe.com/products/firefly", login_url: "https://adobe.com", desc: "商用利用安全。Photoshop統合最強。", detail: "商用デザインのプロに最適。著作権問題なし。", tier: "A" },
+            { cat: "画像生成", rank: 15, name: "Leonardo.AI", company: "Leonardo", flag: "🇺🇸", version: "3.0", rating: 4, lang: "EN", web: true, app: false, url: "https://leonardo.ai", login_url: "https://leonardo.ai/login", desc: "デザイナー向け。複数モデル選択可能。", detail: "高速処理とカスタムモデル作成が強み。", tier: "A" },
+            { cat: "動画生成", rank: 16, name: "Sora 2", company: "OpenAI", flag: "🇺🇸", version: "2.0", rating: 5, lang: "EN", web: true, app: false, url: "https://openai.com/sora", login_url: "#", desc: "物理法則を理解したリアル動画。", detail: "カメオ機能で自分を出演させられる。", tier: "S" },
+            { cat: "動画生成", rank: 17, name: "Veo 3", company: "Google", flag: "🇺🇸", version: "3.0", rating: 5, lang: "EN", web: true, app: false, url: "https://google.com", login_url: "#", desc: "Google最強の動画生成モデル。", detail: "ハイエンド動画制作者向け。", tier: "S" },
+            { cat: "動画生成", rank: 18, name: "Runway Gen-3", company: "Runway", flag: "🇺🇸", version: "Alpha", rating: 4, lang: "EN", web: true, app: false, url: "https://runwayml.com", login_url: "https://runwayml.com/login", desc: "映画制作レベル。Act-One機能搭載。", detail: "VFXアーティスト向けの最強機能。", tier: "A" },
+            { cat: "動画生成", rank: 19, name: "Pika 2.0", company: "Pika", flag: "🇺🇸", version: "2.0", rating: 4, lang: "EN", web: true, app: true, url: "https://pika.art", login_url: "https://pika.art/login", desc: "1080p対応。独創的エフェクト。", detail: "クリエイティブな動画作家向け。", tier: "A" },
+            { cat: "動画生成", rank: 20, name: "Higgsfield", company: "Higgsfield", flag: "🇺🇸", version: "Latest", rating: 4, lang: "EN", web: true, app: false, url: "https://higgsfield.ai", login_url: "#", desc: "ブラウザベース。成長企業。", detail: "手軽に始めたい動画制作者向け。", tier: "A" },
+            { cat: "音声・音楽", rank: 21, name: "Suno", company: "Suno AI", flag: "🇺🇸", version: "v4.0", rating: 5, lang: "JP", web: true, app: true, url: "https://suno.com", login_url: "https://suno.com/login", desc: "高品質な楽曲生成。人間と見分けつかず。", detail: "ジャンル・スタイル自由自在。著作権フリー。", tier: "S" },
+            { cat: "音声・音楽", rank: 22, name: "ElevenLabs", company: "ElevenLabs", flag: "🇬🇧", version: "2.0", rating: 5, lang: "JP", web: true, app: true, url: "https://elevenlabs.io", login_url: "https://elevenlabs.io/login", desc: "自然な音声クローン。感情・リズム保持。", detail: "ナレーション・オーディオブック制作者必須。", tier: "S" },
+            { cat: "音声・音楽", rank: 23, name: "HeyGen", company: "HeyGen", flag: "🇨🇦", version: "2.0", rating: 4, lang: "JP", web: true, app: false, url: "https://heygen.com", login_url: "https://heygen.com/login", desc: "動画自動翻訳・吹き替え。140言語対応。", detail: "多言語動画配信者・企業広報向け。", tier: "A" },
+            { cat: "音声・音楽", rank: 24, name: "VALL-E X", company: "Microsoft", flag: "🇺🇸", version: "1.0", rating: 4, lang: "JP", web: false, app: false, url: "https://microsoft.com", login_url: "#", desc: "テキストから自然な音声を生成。", detail: "研究向け。高度なカスタマイズが可能。", tier: "A" },
+            { cat: "音声・音楽", rank: 25, name: "AIVA", company: "AIVA", flag: "🇱🇺", version: "1.0", rating: 4, lang: "EN", web: true, app: false, url: "https://aiva.ai", login_url: "https://aiva.ai/login", desc: "クラシックからポップまで。作曲補助AI。", detail: "映画・ゲーム背景音楽に最適。", tier: "A" },
+            { cat: "プログラミング", rank: 26, name: "Cursor", company: "Anysphere", flag: "🇺🇸", version: "v0.45", rating: 5, lang: "JP", web: false, app: true, url: "https://cursor.sh", login_url: "https://cursor.sh", desc: "AIネイティブなコードエディタ。", detail: "自然言語でアプリ構築が可能。開発者の神器。", tier: "S" },
+            { cat: "プログラミング", rank: 27, name: "Windsurf", company: "Cognition", flag: "🇺🇸", version: "Latest", rating: 5, lang: "EN", web: false, app: true, url: "https://windsurf.dev", login_url: "#", desc: "Google24億ドル技術ライセンス。", detail: "最先端AIコーディングを試したい人向け。", tier: "S" },
+            { cat: "プログラミング", rank: 28, name: "GitHub Copilot", company: "GitHub", flag: "🇺🇸", version: "X", rating: 5, lang: "JP", web: true, app: true, url: "https://github.com/features/copilot", login_url: "https://github.com/login", desc: "IDEネイティブなペアプログラマー。", detail: "エージェント機能強化。ターミナルコマンド提案。", tier: "S" },
+            { cat: "プログラミング", rank: 29, name: "Devin", company: "Cognition", flag: "🇺🇸", version: "1.0", rating: 4, lang: "EN", web: true, app: false, url: "https://devin.ai", login_url: "#", desc: "AIソフトウェアエンジニア先駆け。", detail: "チーム向けの開発自動化。", tier: "A" },
+            { cat: "プログラミング", rank: 30, name: "Vercel V0", company: "Vercel", flag: "🇺🇸", version: "Latest", rating: 4, lang: "EN", web: true, app: false, url: "https://v0.dev", login_url: "https://v0.dev/login", desc: "UI生成の革命児。即座にコンポーネント生成。", detail: "React・Next.jsコンポーネント瞬時完成。", tier: "A" },
+            { cat: "文章作成", rank: 31, name: "DeepL Write", company: "DeepL", flag: "🇩🇪", version: "v2.0", rating: 5, lang: "JP", web: true, app: true, url: "https://deepl.com/write", login_url: "https://deepl.com", desc: "文章の品格を整える。プロの文体へ。", detail: "翻訳とライティングが統合。日本語も自然。", tier: "S" },
+            { cat: "文章作成", rank: 32, name: "Gamma", company: "Gamma", flag: "🇺🇸", version: "2.0", rating: 5, lang: "JP", web: true, app: false, url: "https://gamma.app", login_url: "https://gamma.app/login", desc: "プロンプトだけでプレゼン資料瞬時生成。", detail: "デザイン苦手なビジネスパーソン必須。", tier: "S" },
+            { cat: "文章作成", rank: 33, name: "Jasper", company: "Jasper", flag: "🇺🇸", version: "3.0", rating: 4, lang: "JP", web: true, app: false, url: "https://jasper.ai", login_url: "https://jasper.ai/login", desc: "ブログ記事から広告文まで。長文に強い。", detail: "ブランドボイス設定で一貫性を確保。", tier: "A" },
+            { cat: "文章作成", rank: 34, name: "Writesonic", company: "Writesonic", flag: "🇺🇸", version: "Latest", rating: 4, lang: "JP", web: true, app: false, url: "https://writesonic.com", login_url: "https://writesonic.com/login", desc: "SEO最適化ブログ記事の自動生成。", detail: "キーワード分析と記事生成が一体。", tier: "A" },
+            { cat: "文章作成", rank: 35, name: "Grammarly", company: "Grammarly", flag: "🇺🇸", version: "Premium", rating: 4, lang: "EN", web: true, app: true, url: "https://grammarly.com", login_url: "https://grammarly.com/login", desc: "英語ライティングの完全サポート。", detail: "ネイティブレベルへの改善を実現。", tier: "A" },
+            { cat: "データ分析", rank: 36, name: "Wolfram Alpha", company: "Wolfram", flag: "🇺🇸", version: "Classic", rating: 5, lang: "EN", web: true, app: true, url: "https://wolframalpha.com", login_url: "https://wolframalpha.com", desc: "数学・科学計算の権威。計算ミスなし。", detail: "物理・化学・統計あらゆる領域に対応。", tier: "S" },
+            { cat: "データ分析", rank: 37, name: "Tableau AI", company: "Salesforce", flag: "🇺🇸", version: "Latest", rating: 4, lang: "JP", web: true, app: true, url: "https://tableau.com", login_url: "https://tableau.com/login", desc: "ビジュアルデータ分析。AI駆動インサイト。", detail: "大規模企業のBI標準。カスタマイズ性高い。", tier: "A" },
+            { cat: "データ分析", rank: 38, name: "Power BI AI", company: "Microsoft", flag: "🇺🇸", version: "Latest", rating: 4, lang: "JP", web: true, app: true, url: "https://powerbi.microsoft.com", login_url: "https://powerbi.microsoft.com", desc: "MicrosoftのBI統合ツール。Excel延長線。", detail: "Office 365との統合で導入が簡単。", tier: "A" },
+            { cat: "データ分析", rank: 39, name: "DataRobot", company: "DataRobot", flag: "🇺🇸", version: "11.0", rating: 4, lang: "EN", web: true, app: false, url: "https://datarobot.com", login_url: "https://datarobot.com/login", desc: "自動機械学習。複雑なML開発を自動化。", detail: "データサイエンティストの工数を大幅削減。", tier: "A" },
+            { cat: "データ分析", rank: 40, name: "MindsDB", company: "MindsDB", flag: "🇺🇸", version: "25.1", rating: 4, lang: "EN", web: true, app: false, url: "https://mindsdb.com", login_url: "https://mindsdb.com/signup", desc: "データベースネイティブML。SQL直結。", detail: "既存DBに直接AI機能を統合。", tier: "A" },
+            { cat: "AIエージェント", rank: 41, name: "n8n", company: "n8n", flag: "🇩🇪", version: "Latest", rating: 4, lang: "EN", web: true, app: false, url: "https://n8n.io", login_url: "https://n8n.io/login", desc: "オープンソース。セルフホスト可能。", detail: "技術者・データ管理重視のチーム向け。", tier: "A" },
+            { cat: "AIエージェント", rank: 42, name: "Zapier Central", company: "Zapier", flag: "🇺🇸", version: "Latest", rating: 4, lang: "JP", web: true, app: false, url: "https://zapier.com", login_url: "https://zapier.com/login", desc: "6000以上のアプリを横断するエージェント。", detail: "ノーコードで自動化を実現。", tier: "A" },
+            { cat: "AIエージェント", rank: 43, name: "Make", company: "Make", flag: "🇨🇭", version: "Pro", rating: 4, lang: "JP", web: true, app: false, url: "https://make.com", login_url: "https://make.com/login", desc: "AIワークフロー自動化。RPA実装。", detail: "ビジュアルフロー設計で直感的。", tier: "A" },
+            { cat: "AIエージェント", rank: 44, name: "CrewAI", company: "CrewAI", flag: "🇺🇸", version: "Latest", rating: 3, lang: "EN", web: true, app: false, url: "https://crewai.io", login_url: "#", desc: "複数AIエージェントの協調フレームワーク。", detail: "複雑なエージェント連携に最適。", tier: "B" },
+            { cat: "AIエージェント", rank: 45, name: "Notion AI", company: "Notion", flag: "🇺🇸", version: "Latest", rating: 4, lang: "JP", web: true, app: true, url: "https://notion.so", login_url: "https://notion.so/login", desc: "ノート内にAI統合。執筆補助と要約。", detail: "知的労働者の標準ツールへ進化。", tier: "A" },
+            { cat: "翻訳", rank: 46, name: "Google Translate AI", company: "Google", flag: "🇺🇸", version: "Latest", rating: 5, lang: "JP", web: true, app: true, url: "https://translate.google.com", login_url: "#", desc: "100言語以上対応。最高精度翻訳。", detail: "カメラ翻訳やオフライン機能も完備。", tier: "S" },
+            { cat: "翻訳", rank: 47, name: "DeepL", company: "DeepL", flag: "🇩🇪", version: "Latest", rating: 5, lang: "JP", web: true, app: true, url: "https://deepl.com", login_url: "https://deepl.com", desc: "文脈を理解した自然な翻訳。Google超。", detail: "ビジネス文書翻訳の標準。", tier: "S" },
+            { cat: "教育", rank: 48, name: "Khan Academy AI", company: "Khan Academy", flag: "🇺🇸", version: "Latest", rating: 4, lang: "JP", web: true, app: true, url: "https://khanacademy.org", login_url: "https://khanacademy.org", desc: "個別学習対応のAI家庭教師。無料本格的。", detail: "数学から歴史まで豊富なコンテンツ。", tier: "A" },
+            { cat: "ビジネス", rank: 49, name: "Dify", company: "Dify", flag: "🇨🇳", version: "0.6.x", rating: 4, lang: "JP", web: true, app: false, url: "https://dify.ai", login_url: "https://dify.ai/login", desc: "ノーコードAIアプリ構築。最速解。", detail: "企業のDX推進に最適。", tier: "A" },
+            { cat: "その他", rank: 50, name: "Perplexity Comet", company: "Perplexity", flag: "🇺🇸", version: "Latest", rating: 4, lang: "JP", web: true, app: true, url: "https://perplexity.ai", login_url: "https://perplexity.ai", desc: "AI駆動ブラウザ。サイドバーアシスタント。", detail: "次世代Web体験。プライバシーも保護。", tier: "A" },
+            { cat: "その他", rank: 51, name: "Reve", company: "AI Art", flag: "🇺🇸", version: "Latest", rating: 4, lang: "EN", web: true, app: false, url: "https://reve.ai", login_url: "#", desc: "キャラクター一貫性に特化。アニメ風。", detail: "イラスト制作者向けの高度な機能。", tier: "A" },
+            { cat: "その他", rank: 52, name: "Meshy", company: "Meshy", flag: "🇺🇸", version: "Latest", rating: 4, lang: "EN", web: true, app: false, url: "https://meshy.ai", login_url: "https://meshy.ai/login", desc: "テキスト/画像から3Dモデル数分生成。", detail: "PBRテクスチャ自動生成。ゲーム開発向け。", tier: "A" },
+            { cat: "その他", rank: 53, name: "Codeium", company: "Codeium", flag: "🇺🇸", version: "1.0", rating: 4, lang: "JP", web: true, app: true, url: "https://codeium.com", login_url: "https://codeium.com/login", desc: "無料で高精度なコード補完。Copilot競合。", detail: "プライバシー重視。個人開発者向け。", tier: "A" },
+            { cat: "その他", rank: 54, name: "Tabnine", company: "Tabnine", flag: "🇮🇱", version: "5.0", rating: 4, lang: "EN", web: true, app: true, url: "https://tabnine.com", login_url: "https://tabnine.com/login", desc: "エンタープライズ向けコード補完。", detail: "セキュリティが強力。大企業対応。", tier: "A" },
+            { cat: "その他", rank: 55, name: "Brave Leo", company: "Brave", flag: "🇺🇸", version: "Latest", rating: 4, lang: "JP", web: true, app: true, url: "https://brave.com", login_url: "#", desc: "プライバシー保護型AIブラウザ。", detail: "広告ブロック + AI統合。プライバシー最強。", tier: "A" },
+            { cat: "非推奨", rank: 98, name: "Meta AI", company: "Meta", flag: "🇺🇸", version: "Latest", rating: 2, lang: "EN", web: true, app: true, url: "https://ai.facebook.com", login_url: "#", desc: "【警告】強制挿入。プライベート通信懸念。", detail: "Instagram・WhatsApp無断統合。避けるべき。", tier: "D" },
+            { cat: "非推奨", rank: 99, name: "低質GPTラッパー", company: "不明", flag: "🌐", version: "Unknown", rating: 1, lang: "EN", web: true, app: false, url: "#", login_url: "#", desc: "【警告】ChatGPTの皮だけ。独自機能なし。", detail: "詐欺同然。Claude直接利用の方が柔軟。", tier: "D" },
+            { cat: "ダークAI", rank: 110, name: "WormGPT", company: "BlackHat AI", flag: "💀", version: "v2.0", rating: 1, lang: "EN", web: true, app: false, url: "https://google.com", login_url: "#", desc: "【⚠️ 警告】犯罪特化AI。ガードレール無し。", detail: "倫理制限がない攻撃用AI。セキュリティ防御の研究対象。", tier: "DARK", dark18: true }
+        ];
+
+        let allDocs = [];
+        let currentFilter = "すべて";
+
+        window.switchTab = (tab) => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            const contentArea = document.getElementById('content-area');
+            if (tab === '厳選版' || tab === '全リスト') {
+                contentArea.innerHTML = '<div id="ai-container" class="grid"></div>';
+                allDocs = masterList110.map((data, idx) => ({ id: idx, data: () => data }));
+                window.applyFilter();
+            } else if (tab === '選択基準') {
+                contentArea.innerHTML = '<div id="criteria-panel"></div>';
+                renderCriteria();
+            }
+        };
+
+        window.applyFilter = (cat = null) => {
+            if(cat) {
+                currentFilter = cat;
+                document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+                if (event && event.target) event.target.classList.add('active');
+            }
+            const searchEl = document.getElementById('search-input');
+            const word = searchEl ? searchEl.value.toLowerCase() : "";
+            const filtered = allDocs.filter(d => {
+                const item = d.data();
+                const matchWord = (item.name || "").toLowerCase().includes(word) || (item.desc || "").toLowerCase().includes(word);
+                const matchCat = currentFilter === "すべて" || item.cat === currentFilter;
+                const showDark = item.dark18 !== true;
+                return matchWord && matchCat && showDark;
+            });
+            renderCards(filtered.sort((a, b) => (a.data().rank || 999) - (b.data().rank || 999)));
+        };
+
+        const renderCards = (docs) => {
+            const container = document.getElementById('ai-container');
+            if (!container) return;
+            container.innerHTML = docs.map(docSnap => {
+                const item = docSnap.data();
+                const stars = "★".repeat(item.rating || 0) + "☆".repeat(5 - (item.rating || 0));
+                let iconUrl = "";
+                try {
+                    const url = item.url;
+                    if (url && url !== "https://google.com" && url !== "#") {
+                        const hostname = new URL(url).hostname.replace('www.', '');
+                        iconUrl = `https://www.google.com/s2/favicons?sz=64&domain=${hostname}`;
+                    }
+                } catch (e) {}
+
+                return `
+                    <div class="ai-card ${item.rank <= 5 ? 'top-rank' : ''} ${item.dark18 ? 'dark-warning' : ''}">
+                        <div class="card-star-box">${stars}</div>
+                        <div class="tier-badge">${item.tier}</div>
+                        <div class="card-top">
+                            <img src="${iconUrl}" class="ai-icon" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2232%22 height=%2232%22 fill=%22%23ccc%22%3E%3Crect width=%2232%22 height=%2232%22/%3E%3C/svg%3E'">
+                            <div class="ai-name-area">
+                                <div class="ai-name">${item.name || 'Unknown'}</div>
+                                <div class="ai-ver-hp">Ver: ${item.version || '-'}</div>
+                            </div>
+                        </div>
+                        <div class="card-company"><span>${item.flag || '🌐'}</span> ${item.company || 'Unknown'}</div>
+                        <div class="card-meta">
+                            <span class="badge">${item.lang === 'JP' ? '日本語OK' : 'EN'}</span>
+                            <span class="badge">${item.web?'WEB':''} ${item.app?'APP':''}</span>
+                        </div>
+                        <div class="desc-box"><p class="ai-desc">${item.desc || ''}</p></div>
+                        <div class="expand-detail">
+                            <p>${item.detail || ''}</p>
+                            ${item.dark18 ? '<p style="color: #ff5252; font-weight: bold;">⚠️ +18以上のコンテンツです。</p>' : ''}
+                            <a href="${item.login_url || '#'}" target="_blank" class="btn-login">サインイン</a>
+                        </div>
+                        <div class="btn-group">
+                            <a href="${item.url}" target="_blank" class="btn btn-primary">公式サイト</a>
+                            <button class="btn btn-outline" onclick="this.closest('.ai-card').classList.toggle('expand'); return false;">詳細</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        const renderCriteria = () => {
+            const panel = document.getElementById('criteria-panel');
+            if (!panel) return;
+            panel.innerHTML = `
+                <div class="criteria-content">
+                    <div class="criteria-tabs">
+                        <button class="criteria-tab active" onclick="window.switchCriteria('beginner')">初心者向け</button>
+                        <button class="criteria-tab" onclick="window.switchCriteria('pro')">プロ向け</button>
+                        <button class="criteria-tab" onclick="window.switchCriteria('general')">全般的基準</button>
+                    </div>
+                    <div id="criteria-body"></div>
+                </div>
+            `;
+            window.switchCriteria('beginner');
+        };
+
+        window.switchCriteria = (type) => {
+            document.querySelectorAll('.criteria-tab').forEach(t => t.classList.remove('active'));
+            if (event && event.target) event.target.classList.add('active');
+            const body = document.getElementById('criteria-body');
+            if (!body) return;
+
+            if (type === 'beginner') {
+                body.innerHTML = `<h3>初心者向け - 7つの視点</h3><div class="criteria-item"><h4>1️⃣ 導線に組み込まれているか</h4><p>今使っているツール（メール、ブラウザ）にAIが入ってるか。Gmail対応なら「Gemini」がおすすめ。</p></div><div class="criteria-item"><h4>2️⃣ 無料or低コスト</h4><p>ChatGPT、Gemini、Claudeいずれも無料プランで試せます。</p></div><div class="criteria-item"><h4>3️⃣ 目的特化</h4><p>なんでも屋→ChatGPT/Gemini｜文章・コード→Claude｜最新情報→Perplexity｜プレゼン資料→Gamma</p></div>`;
+            } else if (type === 'pro') {
+                body.innerHTML = `<h3>プロ向け - 7大評価指標</h3><div class="criteria-item"><h4>1️⃣ Intelligence（知能指数）</h4><p>MMLU-Pro、GPQA Diamondなどの統合スコア。最強：GPT-5シリーズ</p></div><div class="criteria-item"><h4>2️⃣ Text Arena（テキスト品質）</h4><p>LMArenaの人間盲測による読み心地。No.1：Claude</p></div><div class="criteria-item"><h4>3️⃣ Vision Arena（視覚理解）</h4><p>画像内容理解、OCR精度。最強：Gemini Pro</p></div>`;
+            } else if (type === 'general') {
+                body.innerHTML = `<h3>全般的基準 - 4つの普遍的原則</h3><div class="criteria-item"><h4>✗ 原則1：「ベンチマーク神話」を信じない</h4><p>ベンチマークスコア≠実務での役立ち。自分のデータで試すこと。</p></div><div class="criteria-item"><h4>✗ 原則2：「ワークフロー適合性」を最優先</h4><p>高性能でも、使うまでのステップが多い＝結局使われない</p></div><div class="criteria-item"><h4>✗ 原則3：「ガバナンス・セキュリティ」を軽視しない</h4><p>入力データが学習に使われるか、自社サーバーで動かせるか確認。</p></div>`;
+            }
+        };
+
+        window.initialize110Data = async () => {
+            const status = document.getElementById('admin-status');
+            status.innerText = "処理中...";
+            try {
+                const db = window.firebase_db;
+                const writeBatch = window.firebase_writeBatch;
+                const collection = window.firebase_collection;
+                const addDoc = window.firebase_addDoc;
+                const getDocs = window.firebase_getDocs;
+
+                const snapshot = await getDocs(collection(db, "tools"));
+                const batch = writeBatch(db);
+                snapshot.docs.forEach(d => batch.delete(d.ref));
+                await batch.commit();
+                
+                status.innerText = "投入中...";
+                for(const data of masterList110) { 
+                    await addDoc(collection(db, "tools"), data); 
+                }
+                status.innerText = "✅ 110件完全復元完了！";
+                document.getElementById('set').classList.remove('show');
+                setTimeout(() => location.reload(), 2000);
+            } catch (e) { 
+                status.innerText = "❌ エラー: " + e.message; 
+            }
+        };
+
+        window.showDark18Modal = () => {
+            document.getElementById('dark18-modal').classList.add('show');
+        };
+
+        window.closeDark18Modal = () => {
+            document.getElementById('dark18-modal').classList.remove('show');
+        };
+
+        window.confirmDark18 = () => {
+            document.querySelectorAll('.dark-warning').forEach(el => {
+                el.style.display = 'flex';
+            });
+            document.getElementById('dark18-modal').classList.remove('show');
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            allDocs = masterList110.map((data, idx) => ({ id: idx, data: () => data }));
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) {
+                searchInput.addEventListener('input', window.applyFilter);
+            }
+            window.applyFilter();
+        });
+    </script>
 </body>
 </html>
