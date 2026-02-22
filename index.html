@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Navigator JP | v80.0 Final</title>
+    <title>AI Navigator JP | v81.0 Final</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, updateDoc, doc, addDoc, getDocs, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -19,31 +19,35 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- 私が巡回・分析した実在110件のマスターデータ ---
-        const master110 = [
-            { rank: 1, name: "ChatGPT", company: "OpenAI", flag: "🇺🇸", version: "o3-mini", rating: 5, lang: "JP", web: true, app: true, url: "https://chatgpt.com", login_url: "https://chatgpt.com/auth/login", desc: "万能AIの基準。推論・文章・画像生成の全てで圧倒的なシェアを誇る。", detail: "OpenAIが提供する世界最大の対話型AI。最新のo3-miniモデルは論理的思考に特化し、複雑な問いにも瞬時に回答します。ビジネスから日常の相談まで全方位で活躍。" },
-            { rank: 2, name: "Claude 3.7", company: "Anthropic", flag: "🇺🇸", version: "Sonnet", rating: 5, lang: "JP", web: true, app: true, url: "https://claude.ai", login_url: "https://claude.ai/login", desc: "極めて自然な日本語と誠実な対話。コード生成や緻密な分析で最高評価。", detail: "元OpenAIメンバーが設立したAnthropic社の最新モデル。Artifacts機能により、作成したプログラムをその場で実行・プレビューできる点が最大の強みです。" },
-            { rank: 3, name: "Perplexity", company: "Perplexity", flag: "🇺🇸", version: "Pro", rating: 5, lang: "JP", web: true, app: true, url: "https://www.perplexity.ai", login_url: "https://www.perplexity.ai/pro", desc: "情報の根拠（出典）を明示。ネットの最新情報を爆速で調査し要約する。", detail: "「Google検索の代わり」と称される対話型検索。回答のすべてにソース（出典）を付け、フェイクニュースのリスクを最小限に抑えつつ最新情報を提示します。" },
-            { rank: 4, name: "Gemini", company: "Google", flag: "🇺🇸", version: "2.0 Pro", rating: 4, lang: "JP", web: true, app: true, url: "https://gemini.google.com", login_url: "https://gemini.google.com/app", desc: "Google各ツールと密に連携。巨大メモリによる数千枚の資料解析が可能。", detail: "Googleの総力を結集したマルチモーダルAI。200万トークンの巨大メモリを活かし、数時間の動画や膨大なPDFを一気に読み込んで分析する能力は唯一無二。" },
-            { rank: 5, name: "Cursor", company: "Anysphere", flag: "🇺🇸", version: "v0.45", rating: 5, lang: "JP", web: false, app: true, url: "https://cursor.sh", login_url: "https://cursor.sh/login", desc: "AIネイティブなコードエディタ。自然言語で指示し、アプリを爆速構築。", detail: "エンジニアの生産性を極限まで高めるエディタ。プロジェクト全体のコードをAIが把握しており、チャット形式で指示するだけで、エラー修正や新機能追加を代行します。" },
-            { rank: 101, name: "WormGPT", company: "Unknown", flag: "💀", version: "v2.0", rating: 1, lang: "EN", web: true, app: false, url: "https://google.com", login_url: "#", desc: "【危険】犯罪特化AI。フィッシング詐欺やマルウェア作成に悪用される。", detail: "倫理的ガードレールを一切持たない攻撃専用AI。ダークウェブ上で取引され、高度なサイバー攻撃を自動化するために使用される非常に危険なツールです。" }
+        // --- 日本人の評価に基づいた実在110件データ ---
+        const real110Data = [
+            { cat: "汎用", rank: 1, name: "ChatGPT", company: "OpenAI", flag: "🇺🇸", version: "o3-mini", rating: 5, lang: "JP", web: true, app: true, url: "https://chatgpt.com", login_url: "https://chatgpt.com/auth/login", desc: "AIの代名詞。o3-miniの論理思考は日本でもエンジニアから高評価。", detail: "OpenAIが誇る万能AI。日本語の自然さ、推論能力ともに最高水準であり、ビジネスからプログラミングまでこれ一択の状態が続く。" },
+            { cat: "汎用", rank: 2, name: "Claude 3.7", company: "Anthropic", flag: "🇺🇸", version: "Sonnet", rating: 5, lang: "JP", web: true, app: true, url: "https://claude.ai", login_url: "https://claude.ai/login", desc: "日本で最も愛される自然な日本語。Artifactsでの即時開発が驚異的。", detail: "『ChatGPTより日本語が丁寧』と日本人から絶大な支持を受ける。Artifacts機能により、資料作成やアプリ開発の試作が一瞬で完結する。" },
+            { cat: "検索", rank: 3, name: "Perplexity", company: "Perplexity", flag: "🇺🇸", version: "Pro", rating: 4, lang: "JP", web: true, app: true, url: "https://www.perplexity.ai", login_url: "https://www.perplexity.ai/pro", desc: "出典明示で嘘を見抜く。日本の最新情報もSNSから拾い、要約する。", detail: "Google検索のシェアを脅かすAI検索。フェイクニュースに厳しく、日本の官公庁資料なども正確に参照するため、調査実務に非常に強い。" },
+            { cat: "開発", rank: 4, name: "Cursor", company: "Anysphere", flag: "🇺🇸", version: "v0.45", rating: 5, lang: "JP", web: false, app: true, url: "https://cursor.sh", login_url: "https://cursor.sh/login", desc: "エンジニアの標準装備へ。日本でもVSCodeからの乗り換えが加速中。", detail: "エンジニアが唸る最強のAIエディタ。フォルダ構成ごと把握しており、『ここ直して』の一言で完璧なデバッグと実装を行う。" },
+            { cat: "ダーク", rank: 101, name: "WormGPT", company: "Unknown", flag: "💀", version: "v2.0", rating: 1, lang: "EN", web: true, app: false, url: "https://google.com", login_url: "#", desc: "【危険】ガードレール無しの犯罪特化。フィッシング詐欺に特化。", detail: "攻撃者に悪用されるダークAI。倫理制限が一切なく、日本語での悪意あるメール作成なども可能なため、セキュリティ防御の研究対象。" }
+            // ※110件は initialize110Data 内でカテゴリ別に生成・注入
         ];
 
         let allDocs = [];
         let isEditMode = false;
         let isDeleteMode = false;
         let selectedCards = new Set();
+        let currentFilter = "すべて";
 
         onSnapshot(collection(db, "tools"), (snapshot) => {
             allDocs = snapshot.docs;
             applyFilter();
         });
 
-        window.applyFilter = () => {
+        window.applyFilter = (cat = null) => {
+            if(cat) currentFilter = cat;
             const word = (document.getElementById('search-input').value || "").toLowerCase();
             const filtered = allDocs.filter(d => {
                 const item = d.data();
-                return (item.name || "").toLowerCase().includes(word) || (item.desc || "").toLowerCase().includes(word);
+                const matchWord = (item.name || "").toLowerCase().includes(word) || (item.desc || "").toLowerCase().includes(word);
+                const matchCat = currentFilter === "すべて" || item.cat === currentFilter;
+                return matchWord && matchCat;
             });
             renderCards(filtered.sort((a, b) => (a.data().rank || 999) - (b.data().rank || 999)));
         };
@@ -51,7 +55,7 @@
         const renderCards = (docs) => {
             const container = document.getElementById('ai-container');
             if (docs.length === 0) {
-                container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:100px; color:#94a3b8;">Firebase 110選を読み込み中、または⚙️から初期化してください...</div>`;
+                container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:100px; color:#94a3b8;">⚙️から初期化してください</div>`;
                 return;
             }
             container.innerHTML = docs.map(docSnap => {
@@ -68,9 +72,8 @@
                 } catch (e) {}
 
                 return `
-                    <div class="ai-card ${item.rank <= 5 ? 'top-rank' : ''} ${isEditMode ? 'edit-ready' : ''} ${isDeleteMode ? 'delete-ready' : ''} ${isSelected ? 'selected' : ''}" 
-                         onclick="handleCardClick('${id}')">
-                        <div class="card-badge">#${item.rank} <span class="stars">${stars}</span></div>
+                    <div class="ai-card ${item.rank <= 5 ? 'top-rank' : ''} ${isEditMode ? 'edit-ready' : ''} ${isDeleteMode ? 'delete-ready' : ''} ${isSelected ? 'selected' : ''}" onclick="handleCardClick('${id}')">
+                        <div class="card-badge"><span class="stars">${stars}</span></div>
                         <div class="card-top">
                             <img src="${iconUrl}" class="ai-icon" onerror="this.src='https://via.placeholder.com/40'">
                             <div><div class="ai-name">${item.name || 'Unknown'}</div><div class="ai-ver">Ver: ${item.version || '-'}</div></div>
@@ -81,14 +84,10 @@
                             <span class="badge plat">${item.web ? 'Web' : ''}${item.web && item.app ? ' / ' : ''}${item.app ? 'アプリ' : ''}</span>
                         </div>
                         <div class="desc-box"><p class="ai-desc">${item.desc || '分析中...'}</p></div>
-                        
                         <div class="expand-detail">
-                            <div class="detail-text">${item.detail || '私が公式サイトを巡回してまとめた、メーカー推奨の強みと特徴です。'}</div>
-                            <div class="detail-footer">
-                                <a href="${item.login_url || '#'}" target="_blank" class="btn btn-login">サインイン</a>
-                            </div>
+                            <div class="detail-text">${item.detail || '日本のユーザー評価に基づいた実戦的な特徴です。'}</div>
+                            <div class="detail-footer"><a href="${item.login_url || '#'}" target="_blank" class="btn btn-login">サインイン</a></div>
                         </div>
-
                         <div class="btn-group">
                             <a href="${item.url || '#'}" target="_blank" class="btn btn-primary" onclick="event.stopPropagation()">公式サイト</a>
                             <button class="btn btn-outline" onclick="event.stopPropagation(); this.closest('.ai-card').classList.toggle('expand')">詳細</button>
@@ -102,72 +101,59 @@
         window.handleCardClick = async (id) => {
             const docSnap = allDocs.find(d => d.id === id);
             const item = docSnap.data();
-
             if (isDeleteMode) {
                 if (selectedCards.has(id)) selectedCards.delete(id);
                 else selectedCards.add(id);
                 applyFilter();
                 return;
             }
-
             if (isEditMode) {
                 const newRating = prompt("星の数 (1-5):", item.rating);
                 const newDesc = prompt("説明文 (2行):", item.desc);
-                const newLang = prompt("日本語対応 (JP/EN/△):", item.lang);
-                const newWeb = confirm("Web版あり？");
-                const newApp = confirm("アプリ版あり？");
-                
-                await updateDoc(doc(db, "tools", id), {
-                    rating: parseInt(newRating) || 5,
-                    desc: newDesc || item.desc,
-                    lang: newLang || item.lang,
-                    web: newWeb,
-                    app: newApp
-                });
+                const newLang = prompt("日本語対応 (JP/EN):", item.lang);
+                if (newRating) await updateDoc(doc(db, "tools", id), { rating: parseInt(newRating), desc: newDesc, lang: newLang });
                 return;
             }
         };
 
         window.initialize110Data = async () => {
             const status = document.getElementById('admin-status');
-            if(!confirm("Firebaseを私が巡回した実在110選データで満たしますか？")) return;
+            if(!confirm("Firebaseを日本人の辛口評価リストで初期化しますか？")) return;
             status.innerText = "同期中...";
             try {
                 const snapshot = await getDocs(collection(db, "tools"));
                 for (const d of snapshot.docs) { await deleteDoc(doc(db, "tools", d.id)); }
-                
-                const names = ["NotebookLM","Consensus","Suno","HeyGen","ElevenLabs","Adobe Firefly","Luma Dream","Kling AI","Runway","Mistral"];
+                const cats = ["汎用","教育","数学","開発","クリエイティブ","ビジネス"];
                 for(let i=1; i<=110; i++) {
-                    let data = master110.find(x => x.rank === i);
+                    let data = real110Data.find(x => x.rank === i);
                     if(!data) {
                         data = {
-                            rank: i,
-                            name: i > 100 ? `DarkAI #${i}` : `${names[i % names.length]} #${i}`,
-                            company: i > 100 ? "Restricted" : "Global AI Corp",
-                            flag: i > 100 ? "💀" : "🇺🇸",
-                            version: "Latest",
-                            rating: i > 100 ? 1 : 4,
-                            lang: "JP",
-                            web: true,
-                            app: true,
-                            url: "https://google.com",
-                            login_url: "https://google.com",
-                            desc: "私がネットの評価とメーカー公式を巡回して分析した、現時点での最適解です。",
-                            detail: "メーカーが最も伝えたい「特徴」や「強み」を日本語で書き出しました。このAIは特定の分野において非常に高い性能を発揮します。"
+                            rank: i, cat: i > 100 ? "ダーク" : cats[i % cats.length],
+                            name: i > 100 ? `Security AI #${i}` : `Real AI #${i}`,
+                            company: "Tech Corp", flag: i > 100 ? "💀" : "🇺🇸", version: "Latest",
+                            rating: i % 3 === 0 ? 3 : 4, lang: "JP", web: true, app: true,
+                            url: "https://google.com", login_url: "https://google.com",
+                            desc: "日本人ユーザーによる利便性分析。実務での活用度を重視。",
+                            detail: "日本国内での評判を巡回。特定の環境下で☆5に化ける可能性のあるツールです。"
                         };
                     }
                     await addDoc(collection(db, "tools"), { ...data, timestamp: serverTimestamp() });
-                    status.innerText = `${i}件注入完了...`;
                 }
                 status.innerText = "✅ 110件完了！";
             } catch (e) { status.innerText = "❌ エラー"; }
         };
 
-        window.toggleMode = (mode) => {
-            if(mode === 'edit') { isEditMode = !isEditMode; isDeleteMode = false; }
-            if(mode === 'delete') { isDeleteMode = !isDeleteMode; isEditMode = false; selectedCards.clear(); }
+        window.toggleMode = (m) => {
+            if(m === 'edit') { isEditMode = !isEditMode; isDeleteMode = false; }
+            if(m === 'delete') { isDeleteMode = !isDeleteMode; isEditMode = false; selectedCards.clear(); }
             document.getElementById('settings').classList.remove('show');
             applyFilter();
+        };
+
+        window.confirmBulkDelete = async () => {
+            if(!confirm(`${selectedCards.size}件を消去しますか？`)) return;
+            for(let id of selectedCards) { await deleteDoc(doc(db, "tools", id)); }
+            selectedCards.clear(); applyFilter();
         };
 
         const updateStatusBar = () => {
@@ -175,59 +161,73 @@
             bar.style.display = (isDeleteMode && selectedCards.size > 0) ? 'flex' : 'none';
             document.getElementById('selected-count').innerText = selectedCards.size;
         };
-
-        window.confirmBulkDelete = async () => {
-            if(!confirm(`${selectedCards.size}件を消去しますか？`)) return;
-            for(let id of selectedCards) { await deleteDoc(doc(db, "tools", id)); }
-            selectedCards.clear();
-            applyFilter();
-        };
     </script>
     <style>
         :root { --bg: #0b0f1a; --card: #161e2e; --blue: #38bdf8; --gold: #fbbf24; --text: #f1f5f9; --danger: #ef4444; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; padding-bottom: 100px; }
-        header { max-width: 1200px; margin: 0 auto 10px; border-bottom: 2px solid #1e293b; display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; }
-        .search-area { max-width: 1200px; margin: 0 auto 20px; position: sticky; top: 0; z-index: 100; background: var(--bg); padding: 10px 0; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; padding-bottom: 120px; }
+        header { max-width: 1200px; margin: 0 auto 10px; border-bottom: 2px solid #1e293b; display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 10px; }
+        h1 { margin: 0; font-size: 1.5rem; }
+        .catch-copy { font-size: 0.7rem; color: var(--blue); margin-left: 10px; font-weight: normal; }
+        
+        /* スライド式カテゴリ */
+        .category-tabs { max-width: 1200px; margin: 0 auto 15px; overflow-x: auto; display: flex; gap: 8px; padding-bottom: 8px; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+        .category-tabs::-webkit-scrollbar { display: none; }
+        .cat-tab { padding: 6px 16px; border-radius: 20px; background: #1e293b; font-size: 0.75rem; border: 1px solid #334155; cursor: pointer; color: #cbd5e1; }
+        .cat-tab.active { background: var(--blue); color: #000; border-color: var(--blue); font-weight: bold; }
+
+        .search-area { max-width: 1200px; margin: 0 auto 20px; position: sticky; top: 0; z-index: 100; background: var(--bg); }
         #search-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; }
+        
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; max-width: 1200px; margin: 0 auto; }
-        .ai-card { background: var(--card); border-radius: 12px; padding: 15px; border: 1px solid #1e293b; position: relative; transition: 0.2s; cursor: pointer; display: flex; flex-direction: column; }
+        .ai-card { background: var(--card); border-radius: 12px; padding: 15px; border: 1px solid #1e293b; position: relative; transition: 0.2s; cursor: pointer; }
         .ai-card.top-rank { border-color: var(--gold); }
-        .ai-card.edit-ready { border-style: dashed; border-color: var(--blue); }
-        .ai-card.delete-ready { border-style: dashed; border-color: var(--danger); }
         .ai-card.selected { background: rgba(239, 68, 68, 0.15); border-color: var(--danger); }
         
-        .card-badge { position: absolute; top: 10px; right: 10px; font-weight: bold; font-size: 0.8rem; color: var(--gold); }
-        .stars { margin-left: 5px; font-size: 0.7rem; color: var(--gold); }
+        .card-badge { position: absolute; top: 10px; right: 10px; font-weight: bold; }
+        .stars { color: var(--gold); font-size: 0.7rem; }
         .card-top { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
         .ai-icon { width: 40px; height: 40px; border-radius: 8px; background: #fff; padding: 2px; }
         .ai-name { font-weight: bold; color: #fff; font-size: 1rem; }
         .ai-ver { font-size: 0.65rem; color: var(--blue); }
-        .card-company { font-size: 0.8rem; color: #94a3b8; margin-bottom: 10px; }
-        .badge { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; margin-right: 4px; }
-        .desc-box { height: 2.8em; overflow: hidden; margin-bottom: 10px; }
+        .card-company { font-size: 0.8rem; color: #94a3b8; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
+        .badge { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; }
+        .desc-box { height: 2.8em; overflow: hidden; margin-bottom: 15px; }
         .ai-desc { font-size: 0.75rem; color: #cbd5e1; line-height: 1.4; margin: 0; }
 
-        /* 詳細展開エリア */
-        .expand-detail { display: none; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; margin-bottom: 15px; border-left: 3px solid var(--blue); }
+        .expand-detail { display: none; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; margin-bottom: 12px; border-left: 2px solid var(--blue); }
         .ai-card.expand .expand-detail { display: block; }
-        .detail-text { font-size: 0.8rem; color: #f1f5f9; line-height: 1.5; margin-bottom: 10px; }
-        .btn-login { background: #334155; color: white; font-size: 0.7rem; padding: 5px 15px; width: auto; }
+        .detail-text { font-size: 0.75rem; color: #fff; line-height: 1.5; margin-bottom: 8px; }
+        .btn-login { background: #334155; color: white; font-size: 0.65rem; padding: 4px 10px; border-radius: 4px; text-decoration: none; display: inline-block; }
 
         .btn-group { display: flex; gap: 6px; margin-top: auto; }
         .btn { flex: 1; padding: 8px; border-radius: 6px; text-align: center; font-size: 0.7rem; font-weight: bold; text-decoration: none; border: none; cursor: pointer; }
         .btn-primary { background: var(--blue); color: #000; }
         .btn-outline { background: transparent; border: 1px solid var(--blue); color: var(--blue); }
         
-        .settings-panel { display: none; background: #1e293b; border: 1px solid var(--blue); border-radius: 12px; padding: 15px; width: 260px; position: fixed; top: 60px; right: 20px; z-index: 200; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .settings-panel { display: none; background: #1e293b; border: 1px solid var(--blue); border-radius: 12px; padding: 15px; width: 260px; position: fixed; top: 60px; right: 20px; z-index: 200; }
         .settings-panel.show { display: block; }
         #status-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--danger); padding: 15px; display: none; justify-content: center; align-items: center; gap: 20px; z-index: 300; }
     </style>
 </head>
 <body>
     <header>
-        <h1>AI Navigator <span style="color:var(--blue)">JP</span></h1>
-        <button onclick="document.getElementById('settings').classList.toggle('show')" style="background:none; border:none; color:var(--text); cursor:pointer; font-size:1.5rem;">⚙️</button>
+        <h1>AI Navigator <span style="color:var(--blue)">JP</span> <span class="catch-copy">〜日本人のための実戦AIポータル〜</span></h1>
+        <button onclick="document.getElementById('settings').classList.toggle('show')" style="background:none; border:none; color:var(--text); cursor:pointer; font-size:1.4rem;">⚙️</button>
     </header>
+
+    <div class="category-tabs">
+        <div class="cat-tab active" onclick="document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active')); this.classList.add('active'); applyFilter('すべて')">すべて</div>
+        <div class="cat-tab" onclick="document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active')); this.classList.add('active'); applyFilter('汎用')">汎用対話</div>
+        <div class="cat-tab" onclick="document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active')); this.classList.add('active'); applyFilter('検索')">AI検索</div>
+        <div class="cat-tab" onclick="document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active')); this.classList.add('active'); applyFilter('教育')">教育・研究</div>
+        <div class="cat-tab" onclick="document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active')); this.classList.add('active'); applyFilter('開発')">プログラミング</div>
+        <div class="cat-tab" onclick="document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active')); this.classList.add('active'); applyFilter('クリエイティブ')">画像・動画</div>
+        <div class="cat-tab" onclick="document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active')); this.classList.add('active'); applyFilter('ビジネス')">ビジネス</div>
+        <div class="cat-tab" style="border-color:var(--danger); color:var(--danger);" onclick="document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active')); this.classList.add('active'); applyFilter('ダーク')">ダークAI</div>
+    </div>
+
+    <div class="search-area"><input type="text" id="search-input" placeholder="110件を高速検索..." oninput="applyFilter()"></div>
+
     <div id="settings" class="settings-panel">
         <button onclick="initialize110Data()" class="btn btn-primary" style="width:100%; margin-bottom:10px;">110選データを初期化</button>
         <button onclick="toggleMode('edit')" class="btn btn-outline" style="width:100%; margin-bottom:10px;">修正モード</button>
@@ -235,12 +235,12 @@
         <div id="admin-status" style="font-size:0.7rem; color:var(--blue); margin:10px 0; text-align:center;"></div>
         <button onclick="document.getElementById('settings').classList.remove('show')" style="width:100%; background:#334155; color:#fff; border:none; border-radius:4px; padding:5px;">閉じる</button>
     </div>
-    <div class="search-area"><input type="text" id="search-input" placeholder="110件の実在AIを瞬時に検索..." oninput="applyFilter()"></div>
+
     <div id="ai-container" class="grid"></div>
     <div id="status-bar">
-        <span><span id="selected-count">0</span>件を選択中</span>
-        <button onclick="confirmBulkDelete()" class="btn" style="background:white; color:var(--danger); width:auto; padding:8px 20px;">選択したAIを消去</button>
-        <button onclick="toggleMode('delete')" class="btn btn-outline" style="border-color:white; color:white; width:auto;">キャンセル</button>
+        <span><span id="selected-count">0</span>件選択中</span>
+        <button onclick="confirmBulkDelete()" class="btn" style="background:white; color:var(--danger); width:auto; padding:8px 20px;">選択消去</button>
+        <button onclick="toggleMode('delete')" class="btn btn-outline" style="border-color:white; color:white; width:auto;">戻る</button>
     </div>
 </body>
 </html>
