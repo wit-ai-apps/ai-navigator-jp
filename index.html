@@ -1,48 +1,176 @@
-<script>
-// --- [1] グローバル基盤 (SSOT & Storage) ---
-window.VERSION_INFO = 'v22.8.18.1 [2026-02-22_1640_deletion-migration]';
-window.spLSGet = function(k) { try { return localStorage.getItem(k); } catch(e) { return null; } };
-window.spLSSet = function(k, v) { try { localStorage.setItem(k, v); } catch(e) {} };
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Navigator JP | v76.1 Official</title>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, deleteDoc, doc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// --- [2] 削除機能の移設 ---
-// 設定モーダル内に以下のロジックを統合します
-async function deleteProductHistory(jan) {
-  const ok = await customConfirm(`商品コード ${jan} の全履歴を削除しますか？`);
-  if (!ok) return;
-  
-  if (db.products[jan]) {
-    delete db.products[jan];
-    saveLocalOnly();
-    syncFirebasePut();
-    showToast("商品を削除しました");
-    renderHistory();
-    closeSettings();
-  }
-}
+        const firebaseConfig = {
+            apiKey: "AIzaSyC990U7XauADarvkUw-WDM7_NMNssp6x2U",
+            authDomain: "ai-navigator-jp.firebaseapp.com",
+            projectId: "ai-navigator-jp",
+            storageBucket: "ai-navigator-jp.firebasestorage.app",
+            messagingSenderId: "533690073056",
+            appId: "1:533690073056:web:41da64545b73f14fcd3585"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-// --- [3] スキャンボタンの物理的復旧 ---
-function forceScanBinding() {
-  const btn = document.getElementById('scanBtnTop');
-  if (!btn) return;
+        let allDocs = [];
+        let isDeleteMode = false;
+        let selectedCards = new Set();
 
-  const handleAction = (e) => {
-    e.preventDefault();
-    if (typeof startScanner === 'function') startScanner();
-  };
+        // データ取得（インデックスエラー回避のため orderBy を使わず取得後にソート）
+        onSnapshot(collection(db, "tools"), (snapshot) => {
+            allDocs = snapshot.docs;
+            render();
+        });
 
-  btn.addEventListener('touchstart', handleAction, { passive: false });
-  btn.addEventListener('click', handleAction, { passive: false });
-}
+        const render = () => {
+            const word = (document.getElementById('search-input').value || "").toLowerCase();
+            const filtered = allDocs.filter(d => {
+                const item = d.data();
+                return (item.name || "").toLowerCase().includes(word) || (item.desc || "").toLowerCase().includes(word);
+            }).sort((a, b) => (a.data().rank || 999) - (b.data().rank || 999));
 
-// --- [4] 初期化実行 ---
-window.addEventListener('DOMContentLoaded', () => {
-  forceScanBinding();
-  loadLocal(); // dbの読み込み
-  renderHistory();
-  console.log(window.VERSION_INFO + " initialized.");
-});
-</script>
+            const container = document.getElementById('ai-container');
+            if (filtered.length === 0) {
+                container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:100px; color:#94a3b8;">データがありません</div>`;
+                return;
+            }
 
-<div id="panelOperator" class="sp-panel mt-3" style="display:none;">
-    <button class="btn btn-outline-danger w-100 mt-3" onclick="promptSpecificDelete()">商品を個別に削除</button>
-</div>
+            container.innerHTML = filtered.map(docSnap => {
+                const item = docSnap.data();
+                const id = docSnap.id;
+                const isSelected = selectedCards.has(id);
+                const iconUrl = item.url ? `https://www.google.com/s2/favicons?sz=128&domain=${new URL(item.url).hostname}` : "";
+                
+                return `
+                    <div class="ai-card ${item.rank <= 5 ? 'top-rank' : ''} ${isDeleteMode ? 'delete-ready' : ''} ${isSelected ? 'selected' : ''}" 
+                         onclick="handleCardClick('${id}')">
+                        <div class="card-badge">#${item.rank}</div>
+                        <div class="card-top">
+                            <img src="${iconUrl}" class="ai-icon" onerror="this.src='https://via.placeholder.com/40'">
+                            <div><div class="ai-name">${item.name}</div><div class="ai-ver">Ver: ${item.version || '-'}</div></div>
+                        </div>
+                        <div class="card-company"><span>${item.flag || '🌐'}</span> ${item.company}</div>
+                        <div class="card-meta">
+                            <span class="badge lang">${item.lang === 'JP' ? '日本語OK' : item.lang}</span>
+                        </div>
+                        <div class="desc-box"><p class="ai-desc">${item.desc}</p></div>
+                    </div>
+                `;
+            }).join('');
+            updateDeleteBar();
+        };
+
+        window.handleCardClick = (id) => {
+            if (!isDeleteMode) return;
+            if (selectedCards.has(id)) selectedCards.delete(id);
+            else selectedCards.add(id);
+            render();
+        };
+
+        window.toggleDeleteMode = () => {
+            isDeleteMode = document.getElementById('delete-toggle').checked;
+            if (!isDeleteMode) selectedCards.clear();
+            render();
+        };
+
+        const updateDeleteBar = () => {
+            const bar = document.getElementById('delete-bar');
+            const count = document.getElementById('selected-count');
+            if (isDeleteMode && selectedCards.size > 0) {
+                bar.classList.add('show');
+                count.innerText = selectedCards.size;
+            } else {
+                bar.classList.remove('show');
+            }
+        };
+
+        window.confirmDelete = async () => {
+            if (!confirm(`${selectedCards.size}件のAIを削除してもよろしいですか？`)) return;
+            for (let id of selectedCards) {
+                await deleteDoc(doc(db, "tools", id));
+            }
+            selectedCards.clear();
+            alert("削除が完了しました");
+        };
+
+        window.applySearch = () => render();
+    </script>
+    <style>
+        :root { --bg: #0b0f1a; --card: #161e2e; --blue: #38bdf8; --gold: #fbbf24; --text: #f1f5f9; --danger: #ef4444; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; padding-bottom: 80px; }
+        header { max-width: 1200px; margin: 0 auto 10px; border-bottom: 2px solid #1e293b; display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; }
+        .search-area { max-width: 1200px; margin: 0 auto 20px; position: sticky; top: 0; z-index: 100; background: var(--bg); padding: 10px 0; }
+        #search-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; max-width: 1200px; margin: 0 auto; }
+        
+        .ai-card { background: var(--card); border-radius: 12px; padding: 15px; border: 1px solid #1e293b; position: relative; transition: 0.2s; }
+        .ai-card.top-rank { border-color: var(--gold); }
+        .ai-card.delete-ready { cursor: pointer; border-style: dashed; }
+        .ai-card.delete-ready:hover { border-color: var(--danger); }
+        .ai-card.selected { border-color: var(--danger); background: rgba(239, 68, 68, 0.1); }
+        
+        .card-badge { position: absolute; top: 10px; right: 10px; font-weight: bold; color: var(--gold); font-size: 0.8rem; }
+        .card-top { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
+        .ai-icon { width: 40px; height: 40px; border-radius: 8px; background: #fff; padding: 2px; }
+        .ai-name { font-weight: bold; color: #fff; font-size: 1.1rem; }
+        .ai-ver { font-size: 0.7rem; color: var(--blue); }
+        .card-company { font-size: 0.8rem; color: #94a3b8; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
+        .badge { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; }
+        .ai-desc { font-size: 0.75rem; color: #cbd5e1; line-height: 1.4; margin: 0; }
+
+        /* 設定パネル */
+        .admin-btn { background: none; border: none; color: var(--text); cursor: pointer; font-size: 1.5rem; }
+        .settings-panel { display: none; background: #1e293b; border: 1px solid var(--blue); border-radius: 12px; padding: 20px; max-width: 400px; margin: 10px auto; position: fixed; top: 60px; right: 20px; z-index: 200; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .settings-panel.show { display: block; }
+        .setting-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+
+        /* 削除バー */
+        #delete-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--danger); color: white; padding: 15px; display: flex; justify-content: center; align-items: center; gap: 20px; transform: translateY(100%); transition: 0.3s; z-index: 300; }
+        #delete-bar.show { transform: translateY(0); }
+        .btn-del { background: white; color: var(--danger); border: none; padding: 8px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+
+        /* トグルスイッチ */
+        .switch { position: relative; display: inline-block; width: 46px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--danger); }
+        input:checked + .slider:before { transform: translateX(22px); }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>AI Navigator <span style="color:var(--blue)">JP</span></h1>
+        <button class="admin-btn" onclick="document.getElementById('settings').classList.toggle('show')">⚙️</button>
+    </header>
+
+    <div id="settings" class="settings-panel">
+        <h3 style="margin-top:0">管理設定</h3>
+        <div class="setting-item">
+            <span>カード削除モード</span>
+            <label class="switch">
+                <input type="checkbox" id="delete-toggle" onchange="toggleDeleteMode()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <p style="font-size:0.75rem; color:#94a3b8;">ONにするとカードを選択して一括削除できます。</p>
+        <button onclick="document.getElementById('settings').classList.remove('show')" style="width:100%; padding:8px; margin-top:10px; background:#334155; color:white; border:none; border-radius:6px; cursor:pointer;">閉じる</button>
+    </div>
+
+    <div class="search-area"><input type="text" id="search-input" placeholder="100件から高速検索..." oninput="applySearch()"></div>
+    <div id="ai-container" class="grid"></div>
+
+    <div id="delete-bar">
+        <span><strong id="selected-count">0</strong> 件のカードを選択中</span>
+        <button class="btn-del" onclick="confirmDelete()">選択したカードを削除する</button>
+        <button onclick="document.getElementById('delete-toggle').checked=false; toggleDeleteMode();" style="background:none; border:1px solid white; color:white; padding:8px 15px; border-radius:6px; cursor:pointer;">キャンセル</button>
+    </div>
+</body>
+</html>
