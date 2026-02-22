@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Navigator JP | v76.2 No-Alert</title>
+    <title>AI Navigator JP | v78 Stable</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyC990U7XauADarvkUw-WDM7_NMNssp6x2U",
@@ -20,168 +20,112 @@
         const db = getFirestore(app);
 
         let allDocs = [];
-        let isDeleteMode = false;
-        let selectedCards = new Set();
-        let isAwaitingConfirm = false;
+        let isEditMode = false;
 
         onSnapshot(collection(db, "tools"), (snapshot) => {
             allDocs = snapshot.docs;
-            render();
+            applyFilter();
         });
 
-        const render = () => {
+        window.applyFilter = () => {
             const word = (document.getElementById('search-input').value || "").toLowerCase();
             const filtered = allDocs.filter(d => {
                 const item = d.data();
                 return (item.name || "").toLowerCase().includes(word) || (item.desc || "").toLowerCase().includes(word);
-            }).sort((a, b) => (a.data().rank || 999) - (b.data().rank || 999));
+            });
+            renderCards(filtered.sort((a, b) => (a.data().rank || 999) - (b.data().rank || 999)));
+        };
 
+        const renderCards = (docs) => {
             const container = document.getElementById('ai-container');
-            if (filtered.length === 0) {
-                container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:100px; color:#94a3b8;">データがありません</div>`;
+            if (docs.length === 0) {
+                container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:100px; color:#94a3b8;">読み込み中...</div>`;
                 return;
             }
-
-            container.innerHTML = filtered.map(docSnap => {
+            container.innerHTML = docs.map(docSnap => {
                 const item = docSnap.data();
                 const id = docSnap.id;
-                const isSelected = selectedCards.has(id);
+                const stars = "★".repeat(item.rating || 0) + "☆".repeat(5 - (item.rating || 0));
                 const iconUrl = item.url ? `https://www.google.com/s2/favicons?sz=128&domain=${new URL(item.url).hostname}` : "";
                 
                 return `
-                    <div class="ai-card ${item.rank <= 5 ? 'top-rank' : ''} ${isDeleteMode ? 'delete-ready' : ''} ${isSelected ? 'selected' : ''}" 
-                         onclick="handleCardClick('${id}')">
-                        <div class="card-badge">#${item.rank}</div>
+                    <div class="ai-card ${item.rank <= 5 ? 'top-rank' : ''} ${isEditMode ? 'edit-ready' : ''}" onclick="handleCardClick('${id}')">
+                        <div class="card-badge">#${item.rank} <span class="rating">${stars}</span></div>
                         <div class="card-top">
                             <img src="${iconUrl}" class="ai-icon" onerror="this.src='https://via.placeholder.com/40'">
-                            <div><div class="ai-name">${item.name}</div><div class="ai-ver">Ver: ${item.version || '-'}</div></div>
+                            <div>
+                                <div class="ai-name">${item.name}</div>
+                                <div class="ai-ver">Ver: ${item.version || '-'}</div>
+                            </div>
                         </div>
                         <div class="card-company"><span>${item.flag || '🌐'}</span> ${item.company}</div>
                         <div class="card-meta">
                             <span class="badge lang">${item.lang === 'JP' ? '日本語OK' : item.lang}</span>
+                            <span class="badge plat">${item.platform}</span>
                         </div>
                         <div class="desc-box"><p class="ai-desc">${item.desc}</p></div>
+                        <div class="btn-group">
+                            <a href="${item.login_url || item.url}" target="_blank" class="btn btn-primary">サインイン</a>
+                            <button class="btn btn-outline" onclick="event.stopPropagation(); this.closest('.ai-card').querySelector('.desc-box').classList.toggle('expand')">詳細</button>
+                        </div>
                     </div>
                 `;
             }).join('');
-            updateDeleteBar();
         };
 
         window.handleCardClick = (id) => {
-            if (!isDeleteMode) return;
-            if (selectedCards.has(id)) selectedCards.delete(id);
-            else selectedCards.add(id);
-            isAwaitingConfirm = false; // 選択が変わったら確認をリセット
-            render();
-        };
-
-        window.toggleDeleteMode = () => {
-            isDeleteMode = document.getElementById('delete-toggle').checked;
-            if (!isDeleteMode) {
-                selectedCards.clear();
-                isAwaitingConfirm = false;
-            }
-            render();
-        };
-
-        const updateDeleteBar = () => {
-            const bar = document.getElementById('delete-bar');
-            const count = document.getElementById('selected-count');
-            const delBtn = document.getElementById('del-confirm-btn');
+            if (!isEditMode) return;
+            const docSnap = allDocs.find(d => d.id === id);
+            const item = docSnap.data();
             
-            if (isDeleteMode && selectedCards.size > 0) {
-                bar.classList.add('show');
-                count.innerText = selectedCards.size;
-                
-                if (isAwaitingConfirm) {
-                    delBtn.innerText = "【 実行 】本当に削除しますか？";
-                    delBtn.classList.add('urgent');
-                } else {
-                    delBtn.innerText = "選択したカードを削除する";
-                    delBtn.classList.remove('urgent');
-                }
-            } else {
-                bar.classList.remove('show');
-            }
-        };
-
-        window.handleDeleteRequest = async () => {
-            if (!isAwaitingConfirm) {
-                isAwaitingConfirm = true;
-                updateDeleteBar();
-                return;
-            }
-
-            // 実行フェーズ
-            const delBtn = document.getElementById('del-confirm-btn');
-            delBtn.innerText = "消去中...";
+            const newName = prompt("AI名:", item.name);
+            const newDesc = prompt("説明文（2行）:", item.desc);
+            const newRating = prompt("評価（1-5）:", item.rating);
+            const newFlag = prompt("国旗絵文字:", item.flag);
             
-            try {
-                for (let id of selectedCards) {
-                    await deleteDoc(doc(db, "tools", id));
-                }
-                selectedCards.clear();
-                isAwaitingConfirm = false;
-                document.getElementById('delete-bar-msg').innerText = "削除しました";
-                setTimeout(() => { document.getElementById('delete-bar-msg').innerText = ""; }, 3000);
-            } catch (e) {
-                document.getElementById('delete-bar-msg').innerText = "エラー発生";
+            if (newName && newDesc) {
+                updateDoc(doc(db, "tools", id), {
+                    name: newName,
+                    desc: newDesc,
+                    rating: parseInt(newRating),
+                    flag: newFlag
+                }).then(() => alert("修正を保存しました"));
             }
-            render();
         };
 
-        window.cancelSelection = () => {
-            selectedCards.clear();
-            isAwaitingConfirm = false;
-            document.getElementById('delete-toggle').checked = false;
-            toggleDeleteMode();
+        window.toggleEditMode = () => {
+            isEditMode = document.getElementById('edit-toggle').checked;
+            applyFilter();
         };
-
-        window.applySearch = () => render();
     </script>
     <style>
         :root { --bg: #0b0f1a; --card: #161e2e; --blue: #38bdf8; --gold: #fbbf24; --text: #f1f5f9; --danger: #ef4444; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; padding-bottom: 100px; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
         header { max-width: 1200px; margin: 0 auto 10px; border-bottom: 2px solid #1e293b; display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; }
         .search-area { max-width: 1200px; margin: 0 auto 20px; position: sticky; top: 0; z-index: 100; background: var(--bg); padding: 10px 0; }
         #search-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; max-width: 1200px; margin: 0 auto; }
-        
         .ai-card { background: var(--card); border-radius: 12px; padding: 15px; border: 1px solid #1e293b; position: relative; transition: 0.2s; }
-        .ai-card.top-rank { border-color: var(--gold); }
-        .ai-card.delete-ready { cursor: pointer; border-style: dashed; }
-        .ai-card.selected { border-color: var(--danger); background: rgba(239, 68, 68, 0.1); transform: scale(0.98); }
-        
-        .card-badge { position: absolute; top: 10px; right: 10px; font-weight: bold; color: var(--gold); font-size: 0.8rem; }
+        .ai-card.top-rank { border-color: var(--gold); box-shadow: 0 0 10px rgba(251, 191, 36, 0.1); }
+        .ai-card.edit-ready { border-style: dashed; border-color: var(--blue); cursor: pointer; }
+        .card-badge { position: absolute; top: 10px; right: 10px; font-weight: bold; font-size: 0.8rem; color: var(--gold); }
+        .rating { margin-left: 5px; color: var(--gold); }
         .card-top { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
         .ai-icon { width: 40px; height: 40px; border-radius: 8px; background: #fff; padding: 2px; }
-        .ai-name { font-weight: bold; color: #fff; font-size: 1.1rem; }
-        .ai-ver { font-size: 0.7rem; color: var(--blue); }
+        .ai-name { font-weight: bold; color: #fff; font-size: 1rem; }
+        .ai-ver { font-size: 0.65rem; color: var(--blue); }
         .card-company { font-size: 0.8rem; color: #94a3b8; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
-        .badge { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; }
+        .badge { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; margin-right: 4px; }
+        .desc-box { height: 2.8em; overflow: hidden; transition: 0.3s; margin-bottom: 15px; }
+        .desc-box.expand { height: auto; }
         .ai-desc { font-size: 0.75rem; color: #cbd5e1; line-height: 1.4; margin: 0; }
-
-        /* 設定パネル */
-        .admin-btn { background: none; border: none; color: var(--text); cursor: pointer; font-size: 1.5rem; }
-        .settings-panel { display: none; background: #1e293b; border: 1px solid var(--blue); border-radius: 12px; padding: 20px; width: 300px; position: fixed; top: 60px; right: 20px; z-index: 200; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .btn-group { display: flex; gap: 6px; }
+        .btn { flex: 1; padding: 8px; border-radius: 6px; text-align: center; font-size: 0.7rem; font-weight: bold; text-decoration: none; border: none; cursor: pointer; }
+        .btn-primary { background: var(--blue); color: #000; }
+        .btn-outline { background: transparent; border: 1px solid var(--blue); color: var(--blue); }
+        .settings-panel { display: none; background: #1e293b; border: 1px solid var(--blue); border-radius: 12px; padding: 15px; width: 260px; position: fixed; top: 60px; right: 20px; z-index: 200; }
         .settings-panel.show { display: block; }
-        .setting-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-
-        /* 削除確認バー（ブラウザアラート代わり） */
-        #delete-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; border-top: 2px solid var(--danger); color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 12px; transform: translateY(100%); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 300; box-shadow: 0 -5px 15px rgba(0,0,0,0.3); }
-        #delete-bar.show { transform: translateY(0); }
-        .btn-del { background: var(--danger); color: white; border: none; padding: 10px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-del.urgent { background: #b91c1c; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
-        .delete-btn-group { display: flex; gap: 10px; width: 100%; max-width: 500px; }
-        .btn-cancel { background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; flex: 1; }
-
-        /* トグルスイッチ */
-        .switch { position: relative; display: inline-block; width: 46px; height: 24px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .4s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--danger); }
-        input:checked + .slider:before { transform: translateX(22px); }
+        .admin-btn { background: none; border: none; color: var(--text); cursor: pointer; font-size: 1.5rem; }
     </style>
 </head>
 <body>
@@ -189,31 +133,15 @@
         <h1>AI Navigator <span style="color:var(--blue)">JP</span></h1>
         <button class="admin-btn" onclick="document.getElementById('settings').classList.toggle('show')">⚙️</button>
     </header>
-
     <div id="settings" class="settings-panel">
-        <h3 style="margin-top:0; font-size:1.1rem;">管理設定</h3>
-        <div class="setting-item">
-            <span>カード削除モード</span>
-            <label class="switch">
-                <input type="checkbox" id="delete-toggle" onchange="toggleDeleteMode()">
-                <span class="slider"></span>
-            </label>
+        <h4 style="margin-top:0">管理設定</h4>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span>カード修正モード</span>
+            <input type="checkbox" id="edit-toggle" onchange="toggleEditMode()">
         </div>
-        <p style="font-size:0.7rem; color:#94a3b8; line-height:1.4;">モードONでカードを選択し、画面下のバーから実行します。</p>
-        <button onclick="document.getElementById('settings').classList.remove('show')" style="width:100%; padding:8px; margin-top:5px; background:#334155; color:white; border:none; border-radius:6px; cursor:pointer;">閉じる</button>
+        <button onclick="document.getElementById('settings').classList.remove('show')" style="width:100%; margin-top:15px; padding:5px;">閉じる</button>
     </div>
-
-    <div class="search-area"><input type="text" id="search-input" placeholder="高速検索..." oninput="applySearch()"></div>
+    <div class="search-area"><input type="text" id="search-input" placeholder="110件から実在AIを検索..." oninput="applyFilter()"></div>
     <div id="ai-container" class="grid"></div>
-
-    <div id="delete-bar">
-        <div style="font-weight: bold; font-size: 0.9rem;">
-            <span id="selected-count">0</span> 件のカードを選択中 <span id="delete-bar-msg" style="color:var(--blue); margin-left:10px;"></span>
-        </div>
-        <div class="delete-btn-group">
-            <button class="btn-cancel" onclick="cancelSelection()">キャンセル</button>
-            <button id="del-confirm-btn" class="btn-del" style="flex:2" onclick="handleDeleteRequest()">選択したカードを削除する</button>
-        </div>
-    </div>
 </body>
 </html>
