@@ -6,9 +6,9 @@
     <title>AI Navigator JP | v102.0 Final (Dev Edition)</title>
     <style>
         :root { --bg: #0b0f1a; --card: #161e2e; --blue: #38bdf8; --gold: #fbbf24; --text: #f1f5f9; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; overflow-x: hidden; }
 
-        /* --- レイアウト構造 --- */
+        /* --- 3カラムレイアウト --- */
         .page-wrapper {
             display: grid;
             grid-template-columns: 300px 1fr 300px;
@@ -19,7 +19,7 @@
             box-sizing: border-box;
         }
 
-        /* サイドバー共通 */
+        /* サイドバー装飾 */
         .sidebar {
             background: var(--card);
             border: 1px solid #1e293b;
@@ -40,11 +40,10 @@
             padding-bottom: 10px;
             border-bottom: 2px solid var(--blue);
             display: flex;
-            align-items: center;
-            gap: 8px;
+            align-items: center; gap: 8px;
         }
 
-        /* ニュース/新着アイテム */
+        /* フィードアイテム */
         .feed-item {
             margin-bottom: 15px;
             padding-bottom: 12px;
@@ -56,7 +55,7 @@
         .feed-date { color: #94a3b8; font-size: 0.75rem; margin-bottom: 4px; }
         .new-badge { background: #ff5252; color: white; padding: 1px 5px; border-radius: 3px; font-size: 0.7rem; margin-right: 5px; font-weight: bold; }
 
-        /* --- 中央コンテンツ（既存のデザインを維持） --- */
+        /* --- 中央メインコンテンツ --- */
         main { min-width: 0; }
         header { border-bottom: 2px solid #1e293b; padding-bottom: 10px; margin-bottom: 10px; }
         .hp-version { font-size: 0.75rem; color: #94a3b8; font-family: monospace; }
@@ -70,16 +69,15 @@
         #search-input { width: 100%; margin-bottom: 20px; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; }
         
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-        .ai-card { background: var(--card); border-radius: 12px; padding: 15px; border: 1px solid #1e293b; display: flex; flex-direction: column; min-height: 300px; position: relative; }
+        .ai-card { background: var(--card); border-radius: 12px; padding: 15px; border: 1px solid #1e293b; display: flex; flex-direction: column; min-height: 250px; position: relative; }
         .ai-card.top-rank { border-color: var(--gold); }
-        .ai-name { font-weight: bold; font-size: 1.2rem; margin-bottom: 5px; }
-        .desc-box { font-size: 0.85rem; margin: 10px 0; color: #cbd5e1; height: 3em; overflow: hidden; }
+        .ai-name { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; }
+        .desc-box { font-size: 0.8rem; margin: 10px 0; color: #cbd5e1; height: 3.2em; overflow: hidden; }
         .btn-group { display: flex; gap: 5px; margin-top: auto; }
         .btn { flex: 1; padding: 8px; border-radius: 6px; font-weight: bold; text-align: center; cursor: pointer; text-decoration: none; font-size: 0.75rem; border: none; }
         .btn-primary { background: var(--blue); color: #000; }
-        .btn-outline { background: transparent; border: 1px solid var(--blue); color: var(--blue); }
 
-        /* モバイル対応 */
+        /* モバイルレスポンシブ */
         @media (max-width: 1200px) {
             .page-wrapper { grid-template-columns: 1fr; }
             .sidebar { display: none; }
@@ -88,120 +86,120 @@
 </head>
 <body>
 
-    <div class="page-wrapper">
-        <aside class="sidebar">
-            <div class="side-title">🌍 AI News</div>
-            <div id="news-list">
-                </div>
-        </aside>
+<div class="page-wrapper">
+    <aside class="sidebar">
+        <div class="side-title">🌍 AI News Feed</div>
+        <div id="news-list">読み込み中...</div>
+    </aside>
 
-        <main>
-            <header>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h1>AI Navigator <span style="color:var(--blue)">JP</span></h1>
-                    <div class="hp-version">v102.0 Final - dev branch</div>
-                </div>
-                <div class="catch-copy">息が詰まるほど、圧倒的。</div>
-            </header>
-
-            <div class="tab-container">
-                <button class="tab-btn active" onclick="switchTab('厳選版')">厳選版（110件）</button>
-                <button class="tab-btn" onclick="switchTab('全リスト')">全リスト</button>
+    <main>
+        <header>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h1>AI Navigator <span style="color:var(--blue)">JP</span></h1>
+                <div class="hp-version">v102.0 Final - Dev branch</div>
             </div>
+            <div class="catch-copy">息が詰まるほど、圧倒的。</div>
+        </header>
 
-            <div class="category-sidebar" id="category-sidebar">
-                <div class="cat-tab active" onclick="applyFilter('すべて')">すべて</div>
-                <div class="cat-tab" onclick="applyFilter('チャットAI')">チャットAI</div>
-                <div class="cat-tab" onclick="applyFilter('画像生成')">画像生成</div>
-                <div class="cat-tab" onclick="applyFilter('動画生成')">動画生成</div>
-                <div class="cat-tab" onclick="applyFilter('プログラミング')">プログラミング</div>
-            </div>
+        <div class="tab-container">
+            <button class="tab-btn active">厳選版（110件）</button>
+            <button class="tab-btn">全リスト</button>
+        </div>
 
-            <input type="text" id="search-input" placeholder="110の真実、ここに復元。">
-            <div id="ai-container" class="grid"></div>
-        </main>
+        <div class="category-sidebar">
+            <div class="cat-tab active">すべて</div>
+            <div class="cat-tab">チャットAI</div>
+            <div class="cat-tab">画像生成</div>
+            <div class="cat-tab">プログラミング</div>
+        </div>
 
-        <aside class="sidebar">
-            <div class="side-title">🚀 New Arrivals</div>
-            <div id="new-arrivals">
-                </div>
-        </aside>
-    </div>
+        <input type="text" id="search-input" placeholder="AIツールを検索...">
+        <div id="ai-container" class="grid"></div>
+    </main>
 
-    <script>
-        // --- 110件のマスターリスト (あなたのデータをここに保持) ---
-        const masterList110 = [
-            { cat: "チャットAI", rank: 1, name: "ChatGPT", company: "OpenAI", version: "GPT-5", rating: 5, url: "https://chatgpt.com", desc: "AIの王者。深度推論で複雑な問題を自動調査。", tier: "S" },
-            { cat: "チャットAI", rank: 2, name: "Claude 4.5", company: "Anthropic", version: "Sonnet", rating: 5, url: "https://claude.ai", desc: "文章とコードで最高峰。日本語が自然。", tier: "S" },
-            { cat: "プログラミング", rank: 26, name: "Cursor", company: "Anysphere", version: "v0.45", rating: 5, url: "https://cursor.sh", desc: "AIネイティブなコードエディタ。", tier: "S" },
-            // ... (実際にはここに全てのデータが入ります)
-        ];
+    <aside class="sidebar">
+        <div class="side-title">🚀 New Arrivals</div>
+        <div id="new-arrivals"></div>
+    </aside>
+</div>
 
-        // --- サイドバーの初期化 ---
-        function initSidebars() {
-            // ニュース（日本語）
-            const newsData = [
-                { date: "2026/02/23", title: "OpenAI: 新たな推論エンジンを統合、複雑な数学問題の正答率が99%に向上" },
-                { date: "2026/02/22", title: "Google: 日本国内向けに超高速AI計算インフラの拡張を発表" },
-                { date: "2026/02/21", title: "Adobe: 生成AIによる完全な自動動画編集機能をPhotoshopに搭載予定" }
-            ];
-            document.getElementById('news-list').innerHTML = newsData.map(n => `
-                <div class="feed-item">
-                    <div class="feed-date">${n.date}</div>
-                    <a href="#">${n.title}</a>
-                </div>
-            `).join('');
+<script>
+    // --- 110件のマスターリスト (一部抜粋) ---
+    const masterList110 = [
+        { cat: "チャットAI", rank: 1, name: "ChatGPT", company: "OpenAI", url: "https://chatgpt.com", desc: "AIの王者。最新の推論モデルで複雑なタスクを解決。" },
+        { cat: "チャットAI", rank: 2, name: "Claude 4.5", company: "Anthropic", url: "https://claude.ai", desc: "自然な日本語と高いコーディング能力を誇る。" },
+        { cat: "画像生成", rank: 11, name: "Nano Banana", company: "Google", url: "https://nanobanana.ai", desc: "次世代の画像生成。テキストの忠実度が極めて高い。" },
+        { cat: "プログラミング", rank: 26, name: "Cursor", company: "Anysphere", url: "https://cursor.sh", desc: "AIネイティブなエディタ。自然言語で開発可能。" },
+        { cat: "動画生成", rank: 16, name: "Sora", company: "OpenAI", url: "https://openai.com", desc: "物理法則を再現する驚異的な動画生成AI。" }
+    ];
 
-            // 新着AI（masterList110の最後から5件）
-            const arrivals = [...masterList110].slice(-5).reverse();
-            document.getElementById('new-arrivals').innerHTML = arrivals.map(ai => `
-                <div class="feed-item">
-                    <a href="${ai.url}" target="_blank">
-                        <span class="new-badge">NEW</span> <strong>${ai.name}</strong>
-                        <div style="font-size:0.7rem; color:#94a3b8; margin-top:5px;">${ai.desc.substring(0, 30)}...</div>
-                    </a>
-                </div>
-            `).join('');
-        }
+    // --- 左：世界のAIニュース取得 ---
+    async function fetchNews() {
+        const newsContainer = document.getElementById('news-list');
+        const RSS_URL = 'https://www.theverge.com/ai-artificial-intelligence/rss/index.xml';
+        const API_URL = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}`;
 
-        // --- メイン機能 (既存のロジック) ---
-        let currentFilter = "すべて";
-
-        function applyFilter(cat = "すべて") {
-            currentFilter = cat;
-            document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
-            if(event) event.target.classList.add('active');
-
-            const word = document.getElementById('search-input').value.toLowerCase();
-            const filtered = masterList110.filter(item => {
-                const matchWord = item.name.toLowerCase().includes(word) || item.desc.toLowerCase().includes(word);
-                const matchCat = currentFilter === "すべて" || item.cat === currentFilter;
-                return matchWord && matchCat;
-            });
-            renderCards(filtered);
-        }
-
-        function renderCards(list) {
-            const container = document.getElementById('ai-container');
-            container.innerHTML = list.map(item => `
-                <div class="ai-card ${item.rank <= 5 ? 'top-rank' : ''}">
-                    <div class="ai-name">${item.name}</div>
-                    <div style="font-size:0.75rem; color:var(--blue);">${item.company}</div>
-                    <div class="desc-box">${item.desc}</div>
-                    <div class="btn-group">
-                        <a href="${item.url}" target="_blank" class="btn btn-primary">公式サイト</a>
-                        <button class="btn btn-outline">詳細</button>
+        try {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+            if(data.status === 'ok') {
+                newsContainer.innerHTML = data.items.slice(0, 6).map(item => `
+                    <div class="feed-item">
+                        <div class="feed-date">${new Date(item.pubDate).toLocaleDateString()}</div>
+                        <a href="${item.link}" target="_blank">● ${item.title}</a>
                     </div>
-                </div>
-            `).join('');
+                `).join('');
+            }
+        } catch (e) {
+            newsContainer.innerHTML = "ニュースを取得できませんでした。";
         }
+    }
 
-        // 初期起動
-        document.addEventListener('DOMContentLoaded', () => {
-            initSidebars();
-            renderCards(masterList110);
-            document.getElementById('search-input').addEventListener('input', () => applyFilter(currentFilter));
+    // --- 右：新着AIの表示 ---
+    function renderNewArrivals() {
+        const container = document.getElementById('new-arrivals');
+        const latest = [...masterList110].reverse().slice(0, 5);
+        container.innerHTML = latest.map(ai => `
+            <div class="feed-item">
+                <a href="${ai.url}" target="_blank">
+                    <span class="new-badge">NEW</span> <strong>${ai.name}</strong>
+                    <div style="font-size:0.7rem; color:#94a3b8; margin-top:4px;">${ai.desc.substring(0, 30)}...</div>
+                </a>
+            </div>
+        `).join('');
+    }
+
+    // --- 中央：カード描画 ---
+    function renderCards(list) {
+        const container = document.getElementById('ai-container');
+        container.innerHTML = list.map(item => `
+            <div class="ai-card ${item.rank <= 5 ? 'top-rank' : ''}">
+                <div class="ai-name">${item.name}</div>
+                <div style="font-size:0.7rem; color:var(--blue);">${item.company}</div>
+                <div class="desc-box">${item.desc}</div>
+                <div class="btn-group">
+                    <a href="${item.url}" target="_blank" class="btn btn-primary">公式サイト</a>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // 初期化
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchNews();
+        renderNewArrivals();
+        renderCards(masterList110);
+
+        // 検索フィルタ簡易版
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            const word = e.target.value.toLowerCase();
+            const filtered = masterList110.filter(item => 
+                item.name.toLowerCase().includes(word) || item.desc.toLowerCase().includes(word)
+            );
+            renderCards(filtered);
         });
-    </script>
+    });
+</script>
+
 </body>
-</html
+</html>
