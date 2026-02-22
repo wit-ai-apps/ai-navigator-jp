@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Navigator JP | v70 Official</title>
+    <title>AI Navigator JP | v72 Fixed</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, query, orderBy, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyC990U7XauADarvkUw-WDM7_NMNssp6x2U",
@@ -20,9 +20,7 @@
         const db = getFirestore(app);
 
         let allDocs = [];
-        const q = query(collection(db, "tools"), orderBy("rank", "asc"));
-
-        onSnapshot(q, (snapshot) => {
+        onSnapshot(query(collection(db, "tools"), orderBy("rank", "asc")), (snapshot) => {
             allDocs = snapshot.docs;
             applyFilter();
         });
@@ -50,18 +48,12 @@
                         <div class="card-badge">#${item.rank}</div>
                         <div class="card-top">
                             <img src="${iconUrl}" class="ai-icon" onerror="this.src='https://via.placeholder.com/40'">
-                            <div>
-                                <div class="ai-name">${item.name}</div>
-                                <div class="ai-ver">Ver: ${item.version || '-'}</div>
-                            </div>
+                            <div><div class="ai-name">${item.name}</div><div class="ai-ver">Ver: ${item.version || '-'}</div></div>
                         </div>
-                        <div class="card-company">
-                            <span class="flag-icon">${item.flag || '🌐'}</span> ${item.company}
-                        </div>
+                        <div class="card-company"><span>${item.flag || '🌐'}</span> ${item.company}</div>
                         <div class="card-meta">
                             <span class="badge lang">${item.lang === 'JP' ? '日本語OK' : item.lang}</span>
                             <span class="badge plat">${item.platform}</span>
-                            <span class="badge price">${item.price}</span>
                         </div>
                         <div class="desc-box"><p class="ai-desc">${item.desc}</p></div>
                         <div class="btn-group">
@@ -72,12 +64,18 @@
                 `;
             }).join('');
         };
+
+        window.resetFirebase = async () => {
+            if(!confirm("Firebaseをリセットしますか？")) return;
+            const snapshot = await getDocs(collection(db, "tools"));
+            for (const d of snapshot.docs) { await deleteDoc(doc(db, "tools", d.id)); }
+        };
     </script>
     <style>
         :root { --bg: #0b0f1a; --card: #161e2e; --blue: #38bdf8; --gold: #fbbf24; --text: #f1f5f9; }
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; }
-        header { max-width: 1200px; margin: 0 auto 10px; border-bottom: 2px solid #1e293b; padding-bottom: 10px; }
-        .search-area { max-width: 1200px; margin: 0 auto 20px; position: sticky; top: 0; z-index: 10; background: var(--bg); padding-top: 5px; }
+        header { max-width: 1200px; margin: 0 auto 10px; border-bottom: 2px solid #1e293b; display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; }
+        .search-area { max-width: 1200px; margin: 0 auto 20px; position: sticky; top: 0; z-index: 100; background: var(--bg); padding: 10px 0; }
         #search-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; max-width: 1200px; margin: 0 auto; }
         .ai-card { background: var(--card); border-radius: 12px; padding: 15px; border: 1px solid #1e293b; position: relative; }
@@ -85,13 +83,12 @@
         .card-badge { position: absolute; top: 10px; right: 10px; font-weight: bold; color: var(--gold); }
         .card-top { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
         .ai-icon { width: 40px; height: 40px; border-radius: 8px; background: #fff; padding: 3px; }
-        .ai-name { font-weight: bold; color: #fff; }
+        .ai-name { font-weight: bold; color: #fff; font-size: 1.1rem; }
         .ai-ver { font-size: 0.7rem; color: var(--blue); }
         .card-company { font-size: 0.8rem; color: #94a3b8; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
         .flag-icon { font-size: 1.2rem; }
-        .card-meta { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
+        .card-meta { display: flex; gap: 4px; margin-bottom: 10px; }
         .badge { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; }
-        .lang { border-color: var(--blue); color: var(--blue); }
         .desc-box { height: 2.8em; overflow: hidden; transition: 0.3s; margin-bottom: 15px; }
         .desc-box.expand { height: auto; }
         .ai-desc { font-size: 0.75rem; color: #cbd5e1; line-height: 1.4; margin: 0; }
@@ -99,11 +96,20 @@
         .btn { flex: 1; padding: 8px; border-radius: 6px; text-align: center; font-size: 0.7rem; font-weight: bold; text-decoration: none; border: none; cursor: pointer; }
         .btn-primary { background: var(--blue); color: #000; }
         .btn-outline { background: transparent; border: 1px solid var(--blue); color: var(--blue); }
+        .admin-box { background: #1e293b; padding: 15px; border-radius: 12px; margin: 0 auto 20px; max-width: 1200px; display: none; text-align: center; border: 1px solid var(--blue); }
+        .admin-box.show { display: block; }
     </style>
 </head>
 <body>
-    <header><h1>AI Navigator <span style="color:var(--blue)">JP</span></h1></header>
-    <div class="search-area"><input type="text" id="search-input" placeholder="AI名、会社名、特徴で検索..." oninput="applyFilter()"></div>
+    <header>
+        <h1>AI Navigator <span style="color:var(--blue)">JP</span></h1>
+        <button onclick="document.getElementById('admin').classList.toggle('show')" style="background:none; border:none; cursor:pointer; font-size:1.5rem; color:var(--text);">⚙️</button>
+    </header>
+    <div class="search-area"><input type="text" id="search-input" placeholder="100件から検索..." oninput="applyFilter()"></div>
+    <div id="admin" class="admin-box">
+        <button onclick="resetFirebase()" class="btn btn-outline" style="border-color:#ef4444; color:#ef4444;">Firebaseをリセット</button>
+        <p style="font-size:0.7rem; color:#94a3b8; margin-top:10px;">uploader.htmlで100件注入後、ここを確認してください。</p>
+    </div>
     <div id="ai-container" class="grid"></div>
 </body>
 </html>
