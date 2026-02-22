@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Navigator JP | v72 Fixed</title>
+    <title>AI Navigator JP | v73 Official</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, query, orderBy, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyC990U7XauADarvkUw-WDM7_NMNssp6x2U",
@@ -20,7 +20,8 @@
         const db = getFirestore(app);
 
         let allDocs = [];
-        onSnapshot(query(collection(db, "tools"), orderBy("rank", "asc")), (snapshot) => {
+        // 並び替えなしで取得し、ブラウザ側で並び替える（Firebaseエラー回避）
+        onSnapshot(collection(db, "tools"), (snapshot) => {
             allDocs = snapshot.docs;
             applyFilter();
         });
@@ -31,7 +32,8 @@
                 const item = d.data();
                 return (item.name || "").toLowerCase().includes(word) || (item.desc || "").toLowerCase().includes(word);
             });
-            renderCards(filtered);
+            // ランク順に並び替え
+            renderCards(filtered.sort((a, b) => (a.data().rank || 999) - (b.data().rank || 999)));
         };
 
         const renderCards = (docs) => {
@@ -73,7 +75,7 @@
     </script>
     <style>
         :root { --bg: #0b0f1a; --card: #161e2e; --blue: #38bdf8; --gold: #fbbf24; --text: #f1f5f9; }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
         header { max-width: 1200px; margin: 0 auto 10px; border-bottom: 2px solid #1e293b; display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; }
         .search-area { max-width: 1200px; margin: 0 auto 20px; position: sticky; top: 0; z-index: 100; background: var(--bg); padding: 10px 0; }
         #search-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; }
@@ -87,8 +89,7 @@
         .ai-ver { font-size: 0.7rem; color: var(--blue); }
         .card-company { font-size: 0.8rem; color: #94a3b8; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
         .flag-icon { font-size: 1.2rem; }
-        .card-meta { display: flex; gap: 4px; margin-bottom: 10px; }
-        .badge { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; }
+        .badge { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; margin-right: 4px; }
         .desc-box { height: 2.8em; overflow: hidden; transition: 0.3s; margin-bottom: 15px; }
         .desc-box.expand { height: auto; }
         .ai-desc { font-size: 0.75rem; color: #cbd5e1; line-height: 1.4; margin: 0; }
@@ -108,7 +109,6 @@
     <div class="search-area"><input type="text" id="search-input" placeholder="100件から検索..." oninput="applyFilter()"></div>
     <div id="admin" class="admin-box">
         <button onclick="resetFirebase()" class="btn btn-outline" style="border-color:#ef4444; color:#ef4444;">Firebaseをリセット</button>
-        <p style="font-size:0.7rem; color:#94a3b8; margin-top:10px;">uploader.htmlで100件注入後、ここを確認してください。</p>
     </div>
     <div id="ai-container" class="grid"></div>
 </body>
