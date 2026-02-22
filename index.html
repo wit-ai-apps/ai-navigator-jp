@@ -1,115 +1,48 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Navigator JP | v73 Official</title>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<script>
+// --- [1] グローバル基盤 (SSOT & Storage) ---
+window.VERSION_INFO = 'v22.8.18.1 [2026-02-22_1640_deletion-migration]';
+window.spLSGet = function(k) { try { return localStorage.getItem(k); } catch(e) { return null; } };
+window.spLSSet = function(k, v) { try { localStorage.setItem(k, v); } catch(e) {} };
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyC990U7XauADarvkUw-WDM7_NMNssp6x2U",
-            authDomain: "ai-navigator-jp.firebaseapp.com",
-            projectId: "ai-navigator-jp",
-            storageBucket: "ai-navigator-jp.firebasestorage.app",
-            messagingSenderId: "533690073056",
-            appId: "1:533690073056:web:41da64545b73f14fcd3585"
-        };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+// --- [2] 削除機能の移設 ---
+// 設定モーダル内に以下のロジックを統合します
+async function deleteProductHistory(jan) {
+  const ok = await customConfirm(`商品コード ${jan} の全履歴を削除しますか？`);
+  if (!ok) return;
+  
+  if (db.products[jan]) {
+    delete db.products[jan];
+    saveLocalOnly();
+    syncFirebasePut();
+    showToast("商品を削除しました");
+    renderHistory();
+    closeSettings();
+  }
+}
 
-        let allDocs = [];
-        // 並び替えなしで取得し、ブラウザ側で並び替える（Firebaseエラー回避）
-        onSnapshot(collection(db, "tools"), (snapshot) => {
-            allDocs = snapshot.docs;
-            applyFilter();
-        });
+// --- [3] スキャンボタンの物理的復旧 ---
+function forceScanBinding() {
+  const btn = document.getElementById('scanBtnTop');
+  if (!btn) return;
 
-        window.applyFilter = () => {
-            const word = (document.getElementById('search-input').value || "").toLowerCase();
-            const filtered = allDocs.filter(d => {
-                const item = d.data();
-                return (item.name || "").toLowerCase().includes(word) || (item.desc || "").toLowerCase().includes(word);
-            });
-            // ランク順に並び替え
-            renderCards(filtered.sort((a, b) => (a.data().rank || 999) - (b.data().rank || 999)));
-        };
+  const handleAction = (e) => {
+    e.preventDefault();
+    if (typeof startScanner === 'function') startScanner();
+  };
 
-        const renderCards = (docs) => {
-            const container = document.getElementById('ai-container');
-            if (docs.length === 0) {
-                container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:100px; color:#94a3b8;">Firebaseデータを読み込み中...</div>`;
-                return;
-            }
-            container.innerHTML = docs.map(doc => {
-                const item = doc.data();
-                const iconUrl = item.url ? `https://www.google.com/s2/favicons?sz=128&domain=${new URL(item.url).hostname}` : "";
-                return `
-                    <div class="ai-card ${item.rank <= 5 ? 'top-rank' : ''}">
-                        <div class="card-badge">#${item.rank}</div>
-                        <div class="card-top">
-                            <img src="${iconUrl}" class="ai-icon" onerror="this.src='https://via.placeholder.com/40'">
-                            <div><div class="ai-name">${item.name}</div><div class="ai-ver">Ver: ${item.version || '-'}</div></div>
-                        </div>
-                        <div class="card-company"><span>${item.flag || '🌐'}</span> ${item.company}</div>
-                        <div class="card-meta">
-                            <span class="badge lang">${item.lang === 'JP' ? '日本語OK' : item.lang}</span>
-                            <span class="badge plat">${item.platform}</span>
-                        </div>
-                        <div class="desc-box"><p class="ai-desc">${item.desc}</p></div>
-                        <div class="btn-group">
-                            <a href="${item.url}" target="_blank" class="btn btn-primary">公式サイト</a>
-                            <button class="btn btn-outline" onclick="this.closest('.ai-card').querySelector('.desc-box').classList.toggle('expand')">詳細</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        };
+  btn.addEventListener('touchstart', handleAction, { passive: false });
+  btn.addEventListener('click', handleAction, { passive: false });
+}
 
-        window.resetFirebase = async () => {
-            if(!confirm("Firebaseをリセットしますか？")) return;
-            const snapshot = await getDocs(collection(db, "tools"));
-            for (const d of snapshot.docs) { await deleteDoc(doc(db, "tools", d.id)); }
-        };
-    </script>
-    <style>
-        :root { --bg: #0b0f1a; --card: #161e2e; --blue: #38bdf8; --gold: #fbbf24; --text: #f1f5f9; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
-        header { max-width: 1200px; margin: 0 auto 10px; border-bottom: 2px solid #1e293b; display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; }
-        .search-area { max-width: 1200px; margin: 0 auto 20px; position: sticky; top: 0; z-index: 100; background: var(--bg); padding: 10px 0; }
-        #search-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; max-width: 1200px; margin: 0 auto; }
-        .ai-card { background: var(--card); border-radius: 12px; padding: 15px; border: 1px solid #1e293b; position: relative; }
-        .ai-card.top-rank { border-color: var(--gold); box-shadow: 0 0 10px rgba(251, 191, 36, 0.1); }
-        .card-badge { position: absolute; top: 10px; right: 10px; font-weight: bold; color: var(--gold); }
-        .card-top { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
-        .ai-icon { width: 40px; height: 40px; border-radius: 8px; background: #fff; padding: 3px; }
-        .ai-name { font-weight: bold; color: #fff; font-size: 1.1rem; }
-        .ai-ver { font-size: 0.7rem; color: var(--blue); }
-        .card-company { font-size: 0.8rem; color: #94a3b8; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
-        .flag-icon { font-size: 1.2rem; }
-        .badge { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; margin-right: 4px; }
-        .desc-box { height: 2.8em; overflow: hidden; transition: 0.3s; margin-bottom: 15px; }
-        .desc-box.expand { height: auto; }
-        .ai-desc { font-size: 0.75rem; color: #cbd5e1; line-height: 1.4; margin: 0; }
-        .btn-group { display: flex; gap: 6px; }
-        .btn { flex: 1; padding: 8px; border-radius: 6px; text-align: center; font-size: 0.7rem; font-weight: bold; text-decoration: none; border: none; cursor: pointer; }
-        .btn-primary { background: var(--blue); color: #000; }
-        .btn-outline { background: transparent; border: 1px solid var(--blue); color: var(--blue); }
-        .admin-box { background: #1e293b; padding: 15px; border-radius: 12px; margin: 0 auto 20px; max-width: 1200px; display: none; text-align: center; border: 1px solid var(--blue); }
-        .admin-box.show { display: block; }
-    </style>
-</head>
-<body>
-    <header>
-        <h1>AI Navigator <span style="color:var(--blue)">JP</span></h1>
-        <button onclick="document.getElementById('admin').classList.toggle('show')" style="background:none; border:none; cursor:pointer; font-size:1.5rem; color:var(--text);">⚙️</button>
-    </header>
-    <div class="search-area"><input type="text" id="search-input" placeholder="100件から検索..." oninput="applyFilter()"></div>
-    <div id="admin" class="admin-box">
-        <button onclick="resetFirebase()" class="btn btn-outline" style="border-color:#ef4444; color:#ef4444;">Firebaseをリセット</button>
-    </div>
-    <div id="ai-container" class="grid"></div>
-</body>
-</html>
+// --- [4] 初期化実行 ---
+window.addEventListener('DOMContentLoaded', () => {
+  forceScanBinding();
+  loadLocal(); // dbの読み込み
+  renderHistory();
+  console.log(window.VERSION_INFO + " initialized.");
+});
+</script>
+
+<div id="panelOperator" class="sp-panel mt-3" style="display:none;">
+    <button class="btn btn-outline-danger w-100 mt-3" onclick="promptSpecificDelete()">商品を個別に削除</button>
+</div>
