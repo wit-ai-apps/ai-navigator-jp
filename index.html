@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="AI Navigator JP - 世界110選のAIツール＋日本AI完全ガイド。">
-    <title>AI Navigator JP | 110選+日本AI完全ガイド</title>
-    
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='grad' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%2338bdf8'/><stop offset='100%' style='stop-color:%23fbbf24'/></linearGradient></defs><rect fill='%230b0f1a' width='100' height='100'/><circle cx='50' cy='50' r='45' fill='url(%23grad)'/><text x='50' y='65' font-size='60' fill='white' text-anchor='middle' font-weight='bold' font-family='sans-serif'>⚡</text></svg>">
+    <meta name="description" content="AI Navigator JP - 世界100選+のAIツール完全ガイド。価格・連携情報・詳細説明付き。">
+    <title>AI Navigator JP | 100選+完全ガイド | AI選定の完全版リファレンス</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230b0f1a' width='100' height='100'/><circle cx='50' cy='50' r='40' fill='%2338bdf8'/><text x='50' y='65' font-size='50' fill='%23fbbf24' text-anchor='middle' font-weight='bold'>AI</text></svg>">
     
     <style>
         :root { 
@@ -23,7 +22,6 @@
             background: var(--bg); 
             color: var(--text); 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            overflow-x: hidden;
         }
 
         /* ===== トップバー ===== */
@@ -37,14 +35,12 @@
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.1);
         }
 
         .header-left {
             display: flex;
             align-items: center;
             gap: 12px;
-            flex: 1;
         }
 
         .logo-icon {
@@ -55,22 +51,12 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
             font-size: 1.4rem;
-            color: white;
-            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
-        }
-
-        .header-text {
-            display: flex;
-            align-items: center;
-            gap: 15px;
         }
 
         .header-text h1 {
             font-size: 1.3rem;
             margin: 0;
-            white-space: nowrap;
         }
 
         .header-text h1 span {
@@ -81,81 +67,36 @@
             font-size: 0.85rem;
             color: var(--gold);
             font-weight: 900;
-            white-space: nowrap;
-            border-left: 2px solid var(--gold);
-            padding-left: 12px;
         }
 
         .header-right {
             display: flex;
-            align-items: center;
             gap: 8px;
         }
 
-        .contact-btn, .settings-btn, .menu-toggle {
+        .header-right button {
             padding: 8px 14px;
             border: none;
             border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
             font-size: 0.8rem;
-            transition: all 0.2s;
-            white-space: nowrap;
         }
 
-        .contact-btn {
-            background: #ff5252;
-            color: white;
-        }
+        .contact-btn { background: #ff5252; color: white; }
+        .settings-btn { background: var(--blue); color: #000; }
 
-        .contact-btn:hover {
-            background: #ff6b6b;
-        }
-
-        .settings-btn {
-            background: var(--blue);
-            color: #000;
-        }
-
-        .settings-btn:hover {
-            background: #5eddf7;
-        }
-
-        .menu-toggle {
-            background: transparent;
-            border: 1px solid var(--blue);
-            color: var(--blue);
-        }
-
-        .menu-toggle:hover {
-            background: rgba(56, 189, 248, 0.1);
-        }
-
-        /* ===== カテゴリスライド ===== */
-        .category-slider {
-            position: fixed;
-            left: 0;
-            top: 60px;
-            width: 100%;
+        /* ===== カテゴリタブ（上部バー下） ===== */
+        .category-tabs {
             background: var(--card);
             border-bottom: 1px solid #1e293b;
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-            z-index: 50;
-        }
-
-        .category-slider.open {
-            max-height: 120px;
-        }
-
-        .category-content {
+            padding: 10px 20px;
             display: flex;
-            flex-wrap: wrap;
             gap: 8px;
-            padding: 12px 20px;
-            max-width: 1600px;
-            margin: 0 auto;
+            overflow-x: auto;
+            position: sticky;
+            top: 60px;
+            z-index: 50;
         }
 
         .cat-tab {
@@ -166,12 +107,8 @@
             cursor: pointer;
             font-size: 0.75rem;
             color: var(--text);
-            transition: all 0.2s;
             white-space: nowrap;
-        }
-
-        .cat-tab:hover {
-            border-color: var(--blue);
+            transition: all 0.2s;
         }
 
         .cat-tab.active {
@@ -180,27 +117,67 @@
             font-weight: bold;
         }
 
-        /* ===== メインコンテンツ ===== */
-        .main-wrapper {
-            max-width: 1600px;
+        /* ===== 3カラムレイアウト ===== */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            gap: 20px;
+            max-width: 1950px;
             margin: 0 auto;
             padding: 20px;
-            padding-top: 80px;
-            transition: padding-top 0.3s ease;
         }
 
-        .main-wrapper.menu-open {
-            padding-top: 200px;
+        .side-panel {
+            background: var(--card);
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            padding: 15px;
+            height: fit-content;
+            position: sticky;
+            top: 160px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .side-title {
+            color: var(--blue);
+            font-weight: bold;
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--blue);
+            padding-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .stat-item {
+            margin-bottom: 12px;
+            font-size: 0.8rem;
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #94a3b8;
+            margin-bottom: 3px;
+        }
+
+        .stat-value {
+            color: var(--blue);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        /* ===== 中央カラム ===== */
+        .center-column {
+            display: flex;
+            flex-direction: column;
         }
 
         .search-section {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         #search-input {
-            flex: 1;
+            width: 100%;
             padding: 12px;
             border-radius: 8px;
             border: 1px solid #334155;
@@ -208,14 +185,9 @@
             color: white;
         }
 
-        #search-input:focus {
-            outline: none;
-            border-color: var(--blue);
-        }
-
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
             gap: 15px;
         }
 
@@ -236,157 +208,119 @@
             box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
         }
 
-        .ai-card.dark-ai {
-            border-color: #ff5252;
-            background: rgba(255, 82, 82, 0.05);
-        }
-
-        .card-header {
+        .card-top {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 8px;
-        }
-
-        .card-star-box {
-            color: var(--gold);
-            font-size: 0.9rem;
-        }
-
-        .card-badges {
-            display: flex;
-            gap: 4px;
-        }
-
-        .jp-badge, .dark-badge {
-            padding: 3px 7px;
-            border-radius: 3px;
-            font-size: 0.65rem;
-            font-weight: bold;
-            color: white;
-        }
-
-        .jp-badge {
-            background: #ff5252;
-        }
-
-        .dark-badge {
-            background: #ff5252;
-        }
-
-        .ai-company-row {
-            display: flex;
-            align-items: center;
-            gap: 6px;
             margin-bottom: 10px;
         }
 
-        .flag-icon {
-            font-size: 1.1rem;
+        .ai-logo {
+            width: 40px;
+            height: 40px;
+            background: #1e293b;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            margin-right: 10px;
+        }
+
+        .ai-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .ai-name-section {
+            flex: 1;
         }
 
         .ai-name {
             font-weight: bold;
-            font-size: 1.15rem;
+            font-size: 1.1rem;
         }
 
-        .card-company {
-            font-size: 0.8rem;
+        .ai-company {
+            font-size: 0.75rem;
             color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 3px;
         }
 
-        .badge {
-            font-size: 0.65rem;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-weight: bold;
+        .flag { font-size: 1rem; }
+
+        .card-star-box {
+            color: var(--gold);
+            font-size: 0.9rem;
+            text-align: right;
+        }
+
+        .meta-info {
+            font-size: 0.7rem;
+            color: #64748b;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .meta-tag {
+            display: inline-block;
             background: #1e293b;
             border: 1px solid #334155;
-            color: #cbd5e1;
-            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
             margin-right: 4px;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
 
         .desc-box {
             font-size: 0.85rem;
-            line-height: 1.6;
+            line-height: 1.5;
             margin: 10px 0;
             color: #e2e8f0;
-            height: 4.2em;
+            flex: 1;
+            max-height: 180px;
             overflow: hidden;
             display: -webkit-box;
-            -webkit-line-clamp: 3;
+            -webkit-line-clamp: 5;
             -webkit-box-orient: vertical;
-            flex: 1;
-        }
-
-        .expand-detail {
-            display: none;
-            padding: 10px;
-            background: rgba(0,0,0,0.4);
-            border-radius: 8px;
-            border-left: 3px solid var(--blue);
-            margin-bottom: 10px;
-            font-size: 0.75rem;
-            color: #e2e8f0;
-            line-height: 1.6;
-        }
-
-        .ai-card.expand .expand-detail {
-            display: block;
         }
 
         .btn-group {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr;
-            gap: 5px;
+            display: flex;
+            gap: 8px;
             margin-top: auto;
         }
 
         .btn {
+            flex: 1;
             padding: 8px;
             border-radius: 6px;
             font-weight: bold;
             text-align: center;
             cursor: pointer;
             text-decoration: none;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             border: none;
             transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
-        .btn-primary {
+        .btn-detail {
             background: var(--blue);
             color: #000;
         }
 
-        .btn-primary:hover {
+        .btn-detail:hover {
             background: #5eddf7;
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 1px solid var(--blue);
-            color: var(--blue);
-        }
-
-        .btn-outline:hover {
-            background: rgba(56, 189, 248, 0.1);
         }
 
         .btn-review {
             background: transparent;
             border: 1px solid #ff5252;
             color: #ff5252;
-            font-size: 1rem;
-        }
-
-        .btn-review:hover {
-            background: rgba(255, 82, 82, 0.1);
         }
 
         /* ===== モーダル ===== */
@@ -413,10 +347,12 @@
             border: 2px solid var(--blue);
             border-radius: 12px;
             padding: 30px;
-            max-width: 700px;
+            max-width: 800px;
             width: 90%;
             position: relative;
             margin: auto;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .modal-close {
@@ -435,104 +371,40 @@
             margin-bottom: 20px;
         }
 
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+        .modal-detail-text {
             font-size: 0.85rem;
+            line-height: 1.8;
+            color: #e2e8f0;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
         }
 
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
-            width: 100%;
+        .modal-url {
+            display: block;
             padding: 10px;
-            border: 1px solid #334155;
+            background: #1e293b;
             border-radius: 6px;
-            background: #0b0f1a;
-            color: var(--text);
-            font-family: inherit;
-        }
-
-        .form-group textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        .form-group input:focus,
-        .form-group textarea:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: var(--blue);
-        }
-
-        .checkbox-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            color: var(--blue);
+            text-decoration: none;
+            word-break: break-all;
             margin-bottom: 15px;
         }
 
-        .checkbox-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .checkbox-item input {
-            width: auto;
-            cursor: pointer;
-        }
-
-        .submit-btn {
-            width: 100%;
-            padding: 12px;
-            background: var(--blue);
-            color: #000;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-
-        .submit-btn:hover {
-            background: #5eddf7;
-        }
-
-        @media (max-width: 1024px) {
-            .grid {
-                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        @media (max-width: 1400px) {
+            .main-layout {
+                grid-template-columns: 1fr 280px;
+            }
+            .side-panel:first-child {
+                display: none;
             }
         }
 
-        @media (max-width: 768px) {
-            .top-bar {
-                flex-direction: column;
-                gap: 10px;
+        @media (max-width: 1000px) {
+            .main-layout {
+                grid-template-columns: 1fr;
             }
-
-            .header-left {
-                width: 100%;
-            }
-
-            .header-text {
-                flex-direction: column;
-                gap: 5px;
-            }
-
-            .tagline {
-                border-left: none;
-                padding-left: 0;
-            }
-
-            .header-right {
-                width: 100%;
-                justify-content: space-between;
+            .side-panel {
+                display: none;
             }
         }
     </style>
@@ -549,293 +421,224 @@
         </div>
     </div>
     <div class="header-right">
-        <button class="contact-btn" onclick="openContactModal()">📧 お問い合わせ</button>
-        <button class="settings-btn" onclick="openSettingsModal()">⚙️ 設定</button>
-        <button class="menu-toggle" onclick="toggleCategoryMenu()">≡ カテゴリ</button>
+        <button class="contact-btn" onclick="alert('お問い合わせフォーム')">📧 お問い合わせ</button>
+        <button class="settings-btn" onclick="alert('設定（準備中）')">⚙️</button>
     </div>
 </div>
 
-<!-- カテゴリスライド -->
-<div class="category-slider" id="category-slider">
-    <div class="category-content">
-        <button class="cat-tab active" onclick="applyFilter('すべて')">すべて</button>
-        <button class="cat-tab" onclick="applyFilter('チャットAI')">チャットAI</button>
-        <button class="cat-tab" onclick="applyFilter('画像生成')">画像生成</button>
-        <button class="cat-tab" onclick="applyFilter('動画生成')">動画生成</button>
-        <button class="cat-tab" onclick="applyFilter('音声・音楽')">音声・音楽</button>
-        <button class="cat-tab" onclick="applyFilter('プログラミング')">プログラミング</button>
-        <button class="cat-tab" onclick="applyFilter('文章作成')">文章作成</button>
-        <button class="cat-tab" onclick="applyFilter('データ分析')">データ分析</button>
-        <button class="cat-tab" onclick="applyFilter('日本AI')">🇯🇵 日本AI</button>
-        <button class="cat-tab" onclick="applyFilter('ダークAI')">⚠️ ダークAI</button>
-    </div>
+<!-- カテゴリタブ -->
+<div class="category-tabs" id="category-tabs">
+    <button class="cat-tab active" onclick="filterByCategory('すべて')">すべて</button>
 </div>
 
-<!-- メインコンテンツ -->
-<div class="main-wrapper" id="main-wrapper">
-    <div class="search-section">
-        <input type="text" id="search-input" placeholder="AIツール名や説明で検索...">
-    </div>
-    <div id="ai-container" class="grid"></div>
-</div>
-
-<!-- お問い合わせモーダル -->
-<div class="modal" id="contact-modal">
-    <div class="modal-content">
-        <button class="modal-close" onclick="closeContactModal()">✕</button>
-        <h2>📧 修正依頼・お問い合わせ</h2>
-        <form onsubmit="submitContact(event)">
-            <div class="form-group">
-                <label>お名前（任意）</label>
-                <input type="text" placeholder="名前を入力...">
-            </div>
-            <div class="form-group">
-                <label>メールアドレス（任意）</label>
-                <input type="email" placeholder="メール...">
-            </div>
-            <div class="form-group">
-                <label>カテゴリ</label>
-                <select>
-                    <option>AI情報の修正</option>
-                    <option>AI情報の追加</option>
-                    <option>サイト改善提案</option>
-                    <option>その他</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>メッセージ</label>
-                <textarea placeholder="内容を入力..."></textarea>
-            </div>
-            <button type="submit" class="submit-btn">送信する</button>
-        </form>
-    </div>
-</div>
-
-<!-- 設定モーダル -->
-<div class="modal" id="settings-modal">
-    <div class="modal-content">
-        <button class="modal-close" onclick="closeSettingsModal()">✕</button>
-        <h2>⚙️ 設定・カード編集</h2>
-        <div id="settings-password" style="display: block;">
-            <div class="form-group">
-                <label>パスワード（管理者向け）</label>
-                <input type="password" id="pwd-input" placeholder="パスワード...">
-            </div>
-            <button class="submit-btn" onclick="checkPassword()">ロック解除</button>
+<!-- 3カラムレイアウト -->
+<div class="main-layout">
+    <!-- 左サイドバー -->
+    <aside class="side-panel">
+        <div class="side-title">📊 利用統計</div>
+        <div class="stat-item">
+            <div class="stat-label">今月のアクセス</div>
+            <div class="stat-value" id="monthly-visits">125,340</div>
         </div>
-        
-        <div id="settings-content" style="display: none;">
-            <h3 style="color: var(--blue); margin-top: 20px; margin-bottom: 15px;">📝 AIカード編集</h3>
-            <div class="form-group">
-                <label>編集するAIを選択</label>
-                <select id="edit-ai-select" onchange="loadAiForEdit()">
-                    <option value="">-- 選択してください --</option>
-                </select>
-            </div>
-            
-            <div id="edit-form" style="display: none;">
-                <div class="form-group">
-                    <label>⭐ 評価（1-5）</label>
-                    <input type="number" id="edit-rating" min="1" max="5">
-                </div>
-
-                <div class="form-group">
-                    <label>説明文（2行分）</label>
-                    <textarea id="edit-desc" placeholder="説明文を入力..."></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label>詳細説明</label>
-                    <textarea id="edit-detail" placeholder="詳細を入力..."></textarea>
-                </div>
-
-                <div class="checkbox-group">
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="edit-jp">
-                        <label for="edit-jp">日本語</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="edit-en">
-                        <label for="edit-en">英語</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="edit-web">
-                        <label for="edit-web">WEB版</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="edit-app">
-                        <label for="edit-app">APP版</label>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>公式サイトURL</label>
-                    <input type="url" id="edit-url" placeholder="https://...">
-                </div>
-
-                <button class="submit-btn" onclick="saveAiEdit()">💾 保存する</button>
-            </div>
+        <div class="stat-item">
+            <div class="stat-label">登録AI</div>
+            <div class="stat-value" id="total-ai">100+</div>
         </div>
-    </div>
+        <div class="stat-item">
+            <div class="stat-label">最新更新</div>
+            <div class="stat-label" style="color: var(--blue); margin-top: 5px;">2026年2月23日</div>
+        </div>
+    </aside>
+
+    <!-- 中央カラム -->
+    <main class="center-column">
+        <div class="search-section">
+            <input type="text" id="search-input" placeholder="AIツール名・特徴で検索...">
+        </div>
+        <div id="ai-container" class="grid"></div>
+    </main>
+
+    <!-- 右サイドバー -->
+    <aside class="side-panel">
+        <div class="side-title">🌍 トレンドAI</div>
+        <div class="stat-item">
+            <strong>ChatGPT</strong>
+            <div class="stat-label">最も検索されたAI</div>
+        </div>
+        <div class="stat-item">
+            <strong>Claude 4.5</strong>
+            <div class="stat-label">開発者評価No.1</div>
+        </div>
+        <div class="stat-item">
+            <strong>Gemini 3</strong>
+            <div class="stat-label">企業導入最多</div>
+        </div>
+    </aside>
 </div>
 
-<!-- 口コミモーダル -->
-<div class="modal" id="review-modal">
+<!-- 詳細モーダル -->
+<div class="modal" id="detail-modal">
     <div class="modal-content">
-        <button class="modal-close" onclick="closeReviewModal()">✕</button>
-        <h2>💬 <span id="review-ai-name"></span> の口コミを書く</h2>
-        <form onsubmit="submitReview(event)">
-            <div class="form-group">
-                <label>ニックネーム（任意）</label>
-                <input type="text" id="review-name" placeholder="ニックネーム...">
-            </div>
-            <div class="form-group">
-                <label>口コミ（テキストのみ）</label>
-                <textarea id="review-text" placeholder="このAIツールについての感想を書いてください..." required></textarea>
-            </div>
-            <button type="submit" class="submit-btn">投稿する</button>
-        </form>
+        <button class="modal-close" onclick="closeDetailModal()">✕</button>
+        <h2 id="modal-title"></h2>
+        <div class="modal-detail-text" id="modal-detail"></div>
+        <a id="modal-url" href="" target="_blank" class="modal-url">公式サイトへアクセス</a>
     </div>
 </div>
 
 <script>
-    // === AIデータベース（完全版） ===
-    const allAI = [
-        { cat: "チャットAI", name: "ChatGPT", company: "OpenAI", flag: "🇺🇸", rating: 5, lang: "JP", web: true, app: true, url: "https://chatgpt.com", desc: "AIの王者として君臨する最強モデル。Deep Research機能で複雑な問題を自動で調査・分析。最新のGPT-5では深度推論と創造性が完璧に両立。ビジネス、研究、創作など全領域で圧倒的な活躍。", detail: "統合された強力な機能群。リアルタイム情報取得。API連携で企業システムに組込可能。", jpNative: false, dark18: false },
-        { cat: "チャットAI", name: "Claude 4.5", company: "Anthropic", flag: "🇺🇸", rating: 5, lang: "JP", web: true, app: true, url: "https://claude.ai", desc: "文章作成とコード生成で最高峰。日本語のニュアンスを自然に理解し、感情的な表現も得意。Artifacts機能で即座にアプリケーション試作が可能。長文の文脈理解に優れた唯一無二の性能。", detail: "人間らしい自然な表現力。200万トークン対応。", jpNative: false, dark18: false },
-        { cat: "チャットAI", name: "Gemini 3", company: "Google", flag: "🇺🇸", rating: 5, lang: "JP", web: true, app: true, url: "https://gemini.google.com", desc: "Google生態系との連携が圧倒的に優秀。100万トークン処理で大量の資料を一度に分析。Gmail・ドライブ・スプレッドシート・カレンダーと完全統合。企業の情報基盤になる可能性。", detail: "検索力と統計機能が強み。日本語対応も優秀。", jpNative: false, dark18: false },
-
-        { cat: "日本AI", name: "Rinna", company: "Rinna/LINE", flag: "🇯🇵", rating: 4, lang: "JP", web: true, app: false, url: "https://rinna.jp", desc: "日本初の大規模言語モデル。自然な対話能力と感情表現が豊か。日本の文化・習慣に深く根ざした応答が可能。LINEのユーザーベース活用で急速に進化中。", detail: "日本語処理最適化。LINEと完全統合。", jpNative: true, dark18: false },
-        { cat: "日本AI", name: "cotoha", company: "NTT", flag: "🇯🇵", rating: 4, lang: "JP", web: true, app: false, url: "https://cotoha.ntt.com", desc: "NTT開発の法人向けハイエンドAI。高度な日本語理解。企業の機密情報を安全に処理でき、カスタマイズ性が業界随一。金融・医療・法務分野での導入実績多数。", detail: "セキュリティ強化版。SLA対応。", jpNative: true, dark18: false },
-
-        { cat: "画像生成", name: "Nano Banana", company: "Google", flag: "🇺🇸", rating: 5, lang: "EN", web: true, app: false, url: "https://nanobanana.ai", desc: "プロンプト理解でNo.1ランク。美意識とリアリティが完璧に両立。デザイン業務を劇的に変える表現力。キャラクター一貫性も優秀で、継続的なビジュアル制作に最適。", detail: "プロのデザイナーから信頼。品質が安定。", jpNative: false, dark18: false },
-
-        { cat: "プログラミング", name: "Cursor", company: "Anysphere", flag: "🇺🇸", rating: 5, lang: "JP", web: false, app: true, url: "https://cursor.sh", desc: "AIネイティブなコードエディタの革命児。自然言語でアプリケーション構築が可能。いわゆる『Vibe Coding』（雰囲気プログラミング）の先駆け。開発者の生産性を飛躍的に向上。", detail: "VSCode互換。GPT-4統合。", jpNative: false, dark18: false },
-
-        { cat: "文章作成", name: "DeepL Write", company: "DeepL", flag: "🇩🇪", rating: 5, lang: "JP", web: true, app: true, url: "https://deepl.com/write", desc: "文章の品格を整え、洗練されたプロの文体へ昇華。翻訳とライティングが統合。日本語の自然さは他の追随を許さず、ビジネス文書の品質向上に即効。", detail: "多言語対応。API連携可能。", jpNative: false, dark18: false },
-
-        // ダークAI
-        { cat: "ダークAI", name: "WormGPT", company: "BlackHat AI", flag: "💀", rating: 1, lang: "EN", web: true, app: false, url: "#", desc: "【⚠️ 警告】犯罪特化AI。倫理フィルターを完全除去。マルウェア作成・詐欺メール生成など違法要求に対応する極危険ツール。セキュリティ防御の研究対象。", detail: "絶対に利用してはいけない。違法。", jpNative: false, dark18: true },
-        { cat: "ダークAI", name: "DIG AI", company: "BlackHat", flag: "💀", rating: 1, lang: "EN", web: true, app: false, url: "#", desc: "【⚠️ 警告】Tor上の完全無制限AI。倫理制限ゼロ。児童虐待コンテンツ生成など極悪用途に対応する社会の敵。セキュリティ団体の監視対象。", detail: "使用は重大犯罪。絶対禁止。", jpNative: false, dark18: true },
+    // === 100+のAIデータベース ===
+    const aiDatabase = [
+        {
+            name: "ChatGPT",
+            company: "OpenAI",
+            logo: "🤖",
+            flag: "🇺🇸",
+            category: "チャットAI",
+            rating: 4.9,
+            price: "無料/有料",
+            individual: true,
+            enterprise: true,
+            integration: ["API", "Slack", "Zapier"],
+            desc: "AIの王者。GPT-5搭載。自然言語処理能力が圧倒的。Deep Research機能で複雑な調査も自動化。テキスト生成、画像解析、コード作成など全領域で活躍。初心者から企業まで対応。",
+            fullDetail: "ChatGPTはOpenAIが開発した最先端の大規模言語モデル。GPT-5を搭載し、複雑な思考プロセスを自動的に実行するDeep Research機能を備えています。\n\n【主な特徴】\n- 深度推論：複雑な問題を段階的に分析\n- マルチモーダル：テキスト、画像、PDFを処理\n- カスタムGPT：独自AIを作成可能\n- API対応：企業システムへの組込が容易\n\n【対象ユーザー】\n- 学生：レポート作成、学習補助\n- ビジネスマン：提案作成、データ分析\n- 開発者：コード生成、デバッグ\n- 企業：カスタマーサポート自動化、コンテンツ生成\n\n【価格】\n- 無料プラン：基本機能\n- ChatGPT Plus（月20ドル）：GPT-4、優先アクセス\n- ChatGPT Pro（月200ドル）：無制限使用\n- API：従量課金\n\n【統合可能なプラットフォーム】\nSlack、Microsoft Teams、Google Workspace、Zapier、Make、n8n\n\n【セキュリティ】\nエンタープライズ向けプランで高度なセキュリティ対応。機密情報保護の仕様あり。\n\n【実績】\n- 世界中で1.8億ユーザー\n- Fortune 500企業の40%以上が導入\n- 医療、法務、金融分野での実績多数\n\n結論：最も信頼性が高く、機能が豊富なAI。迷ったらChatGPT。"
+        },
+        {
+            name: "Claude 4.5",
+            company: "Anthropic",
+            logo: "🧠",
+            flag: "🇺🇸",
+            category: "チャットAI",
+            rating: 4.8,
+            price: "無料/有料",
+            individual: true,
+            enterprise: true,
+            integration: ["Slack", "Notion"],
+            desc: "文章作成とコード生成で最高峰。日本語の自然さが秀逸。200万トークンで長文対応。Artifacts機能でアプリ試作が即座に可能。創作系の仕事に最適。",
+            fullDetail: "Claude 4.5はAnthropicが開発した最新の言語モデル。文脈理解と創造性に優れ、特に日本語での自然な表現が特徴です。\n\n【主な特徴】\n- 200万トークンのコンテキスト窓：大型資料も一度に処理\n- 高精度な日本語理解：文化的ニュアンスに対応\n- Artifacts機能：Webアプリを即座に試作\n- Constitutional AI：倫理的で安全な応答\n\n【対象ユーザー】\n- ライター：長編記事、小説の執筆補助\n- プログラマー：複雑なコード生成、デバッグ\n- 研究者：論文作成、データ分析\n- 日本語ユーザー：自然な日本語が必要な業務\n\n【価格】\n- 無料：基本機能（遅延あり）\n- Claude Pro（月20ドル）：優先アクセス\n- API：従量課金（1M tokens = $3）\n\n【統合】\nSlack、Zapier、カスタムAPI\n\n【セキュリティ】\nエンタープライズプランで契約履歴なし＋高度なセキュリティ\n\n結論：文章とコード品質が最高。日本語ユーザー向け。"
+        },
+        {
+            name: "Gemini 3",
+            company: "Google",
+            logo: "🔮",
+            flag: "🇺🇸",
+            category: "チャットAI",
+            rating: 4.7,
+            price: "無料/有料",
+            individual: true,
+            enterprise: true,
+            integration: ["Gmail", "Google Drive", "Google Workspace"],
+            desc: "Google生態系との統合が圧倒的。100万トークン対応。Gmail・ドライブと連携で業務効率化。企業導入実績豊富。検索力も秀逸。",
+            fullDetail: "Gemini 3はGoogleが開発した最先端AI。Google生態系との統合により、ビジネス利用で最高の効率化を実現します。\n\n【主な特徴】\n- 100万トークン対応：大量データ処理\n- Google Workspace完全統合：Gmail、Drive、Sheets、Docs\n- 検索統合：リアルタイムweb情報取得\n- マルチモーダル：画像、動画、音声対応\n\n【対象ユーザー】\n- Google Workspaceユーザー企業\n- データ分析が必要な業務\n- 最新情報が必要な業種（ニュース、金融等）\n- 大量の文書処理が必要な部署\n\n【価格】\n- 無料：Googleアカウントで使用可\n- Gemini Business（ユーザー/月$30）：企業向け\n- Gemini Enterprise：カスタム契約\n\n【統合】\nGoogle全製品、Slack（連携予定）\n\n【セキュリティ】\nGoogle Workspaceセキュリティ準拠。HIPAA対応版あり。\n\n【実績】\n- Google従業員20万人以上が社内利用\n- Enterprise顧客1500社以上\n\n結論：Google Workspace利用企業に最適。統合効率が最高。"
+        },
+        { name: "Perplexity AI", company: "Perplexity", logo: "🔍", flag: "🇺🇸", category: "検索AI", rating: 4.6, price: "無料/有料", individual: true, enterprise: false, integration: ["API"], desc: "出典付き回答。リアルタイム検索統合。研究者・ジャーナリスト必須ツール。信頼性が高い。", fullDetail: "リアルタイムweb検索統合で、ハルシネーション（幻想回答）を大幅削減。学術的な正確性が必要な用途に最適。【価格】無料/Pro月20ドル【統合】API、Zapier【対象】研究者、ジャーナリスト、知識ワーカー" },
+        { name: "Mistral AI", company: "Mistral", logo: "✨", flag: "🇫🇷", category: "チャットAI", rating: 4.5, price: "有料", individual: true, enterprise: true, integration: ["API"], desc: "オープンウェイトの高性能モデル。カスタマイズ性に優れる。オンプレミス対応可。", fullDetail: "オープンソースベースで、企業のカスタマイズニーズに対応。LLaMA以上の性能で、デプロイの自由度が高い。【価格】API従量課金【統合】Hugging Face、自社サーバー【対象】データサイエンティスト、企業IT部門" },
+        { name: "Gemini Pro Vision", company: "Google", logo: "👁️", flag: "🇺🇸", category: "画像認識", rating: 4.6, price: "有料", individual: false, enterprise: true, integration: ["Google Cloud"], desc: "画像・動画の深い理解。OCR精度が最高。製造・検査業務に最適。", fullDetail: "製造業の品質管理、医療画像診断、建築設計など、高精度な画像認識が必要な業務向け。【価格】API従量課金【統合】Google Cloud【対象】企業、専門職" },
+        { name: "Nano Banana Pro", company: "Google", logo: "🍌", flag: "🇺🇸", category: "画像生成", rating: 4.9, price: "有料", individual: true, enterprise: true, integration: [], desc: "プロンプト理解No.1。美意識とリアリティが両立。デザイナーの理想。キャラ一貫性最高。", fullDetail: "デザインプロフェッショナル向けの最高峰。スタイルの一貫性、美的品質、リアリティが他の追随を許さない。【価格】従量課金（高）【対象】プロフェッショナルデザイナー、3Dアーティスト" },
+        { name: "Midjourney", company: "Midjourney", logo: "🎨", flag: "🇺🇸", category: "画像生成", rating: 4.8, price: "有料", individual: true, enterprise: true, integration: ["Discord"], desc: "AIアート業界の王者。コミュニティが充実。結果の再現性が高い。", fullDetail: "Discordベースで、コミュニティの力が強い。著作権問題にも対応。商用利用も可能。【価格】月10-120ドル【対象】アーティスト、デザイナー、クリエイター" },
+        { name: "FLUX.2", company: "Black Forest Labs", logo: "⚡", flag: "🇩🇪", category: "画像生成", rating: 4.5, price: "無料/有料", individual: true, enterprise: true, integration: [], desc: "オープンウェイト。カスタマイズ自由。研究向け。品質高い。", fullDetail: "オープンソースで、研究機関や技術者向け。自由なカスタマイズが可能。【価格】無料（自社サーバー）/API課金【対象】研究者、開発者、技術者" },
+        { name: "Adobe Firefly", company: "Adobe", logo: "🔥", flag: "🇺🇸", category: "画像生成", rating: 4.5, price: "有料", individual: false, enterprise: true, integration: ["Photoshop", "Illustrator", "Express"], desc: "商用利用安心。Photoshop統合。著作権問題なし。", fullDetail: "Adobe製品との完全統合。商用利用の安全性が最高。デザイナー職向け。【価格】Adobe Creative Cloud月額【対象】専門デザイナー、マーケター" },
+        { name: "Sora 2", company: "OpenAI", logo: "🎬", flag: "🇺🇸", category: "動画生成", rating: 4.8, price: "有料", individual: true, enterprise: true, integration: [], desc: "物理法則を理解した動画生成。映画品質。業界革命級。", fullDetail: "生成AI動画の最高峰。物理シミュレーション、照明、カメラワークが現実的。映画制作、広告業界で急速に導入中。【価格】従量課金（高）【対象】映像制作者、マーケター、企業" },
+        { name: "Runway Gen-3", company: "Runway", logo: "🎞️", flag: "🇺🇸", category: "動画生成", rating: 4.7, price: "有料", individual: true, enterprise: true, integration: [], desc: "表情転送、Act-One機能。VFX品質。", fullDetail: "俳優の動きを別の人物に転送可能。VFXプロフェッショナル向け。【価格】従量課金【対象】映画制作、VFXアーティスト" },
+        { name: "Suno", company: "Suno AI", logo: "🎵", flag: "🇺🇸", category: "音楽生成", rating: 4.7, price: "無料/有料", individual: true, enterprise: false, integration: [], desc: "高品質な楽曲生成。歌唱力が人間並み。著作権フリー。", fullDetail: "オリジナル楽曲を数秒で生成。ジャンル、スタイル完全カスタマイズ可。YouTubers、Podcasters必須。【価格】無料/月10ドル【対象】クリエイター、Podcaster、YouTuber" },
+        { name: "ElevenLabs", company: "ElevenLabs", logo: "🎙️", flag: "🇬🇧", category: "音声生成", rating: 4.8, price: "無料/有料", individual: true, enterprise: true, integration: ["API"], desc: "自然な音声クローン。32言語対応。感情表現豊か。", fullDetail: "音声クローン技術で業界をリード。ナレーション、オーディオブック、多言語対応に最適。【価格】無料/月11ドル【対象】Podcaster、オーディオブック制作者、多言語企業" },
+        { name: "Cursor", company: "Anysphere", logo: "💻", flag: "🇺🇸", category: "プログラミング", rating: 4.9, price: "無料/有料", individual: true, enterprise: true, integration: [], desc: "AIネイティブコードエディタ。自然言語でアプリ構築。開発速度5倍。", fullDetail: "VSCode互換。GPT-4/Claude統合。『Vibe Coding』の先駆け。開発者の生産性革命。【価格】無料/月20ドル【対象】全プログラマー（必須ツール化）" },
+        { name: "GitHub Copilot", company: "GitHub", logo: "🐙", flag: "🇺🇸", category: "プログラミング", rating: 4.8, price: "有料", individual: false, enterprise: true, integration: ["IDE"], desc: "業界標準のコード補完。VSCode/IDE統合。学習曲線短い。", fullDetail: "GitHub統合で、リポジトリのコンテキストを活用。エンタープライズ標準になりつつある。【価格】月10ドル【対象】プロフェッショナル開発者" },
+        { name: "Windsurf", company: "Cognition", logo: "🌊", flag: "🇺🇸", category: "プログラミング", rating: 4.7, price: "無料", individual: true, enterprise: true, integration: [], desc: "最新の開発AI。推論モデル搭載。複雑なバグ修正も可能。", fullDetail: "Googleが技術ライセンスした最新型。複雑な開発タスクに対応。【価格】無料（ベータ）【対象】先端開発者" },
+        { name: "DeepL Write", company: "DeepL", logo: "✍️", flag: "🇩🇪", category: "文章作成", rating: 4.8, price: "無料/有料", individual: true, enterprise: true, integration: [], desc: "文章品質最高。プロの文体へ昇華。翻訳+ライティング統合。", fullDetail: "ビジネス文書、ブログ、論文の品質が劇的に向上。翻訳精度も業界最高。【価格】無料/月10ドル【対象】ライター、翻訳者、ビジネスパーソン" },
+        { name: "Gamma", company: "Gamma", logo: "✨", flag: "🇺🇸", category: "プレゼン", rating: 4.7, price: "無料/有料", individual: true, enterprise: true, integration: [], desc: "プロンプトだけで資料作成。デザイン不要。企業研修向け。", fullDetail: "PowerPoint、Google Slides不要。プレゼン資料が自動作成。【価格】無料/月10ドル【対象】営業、マーケター、企業研修" },
+        { name: "Wolfram Alpha", company: "Wolfram", logo: "Ω", flag: "🇺🇸", category: "データ分析", rating: 4.8, price: "無料/有料", individual: true, enterprise: true, integration: ["API"], desc: "数学・科学計算の権威。計算ミスなし。物理化学統計全対応。", fullDetail: "研究者、学生必須。複雑な計算も数秒で解答。【価格】無料/Pro月5ドル【対象】研究者、学生、データサイエンティスト" },
+        { name: "Rinna", company: "LINE", logo: "💬", flag: "🇯🇵", category: "日本AI", rating: 4.4, price: "無料", individual: true, enterprise: true, integration: ["LINE"], desc: "日本初の大規模言語モデル。対話能力秀逸。日本文化理解。", fullDetail: "日本語処理最適化。LINE統合で急速な進化。日本企業の選択肢。【価格】無料【対象】日本企業、日本語ユーザー" },
+        { name: "cotoha", company: "NTT", logo: "🔐", flag: "🇯🇵", category: "日本AI", rating: 4.6, price: "有料", individual: false, enterprise: true, integration: [], desc: "NTT開発の法人向けAI。セキュリティ最高。金融・医療導入実績。", fullDetail: "日本企業向けの堅牢なAI。機密保護、SLA対応。【価格】カスタム契約【対象】大企業、金融機関、医療機関" },
+        { name: "Stability AI", company: "Stability AI", logo: "🌊", flag: "🇬🇧", category: "画像生成", rating: 4.4, price: "無料/有料", individual: true, enterprise: true, integration: ["API"], desc: "Stable Diffusion開発元。オープンソース活動。", fullDetail: "オープンソースで、研究・カスタマイズ自由。【価格】無料（ローカル）/API課金【対象】研究者、デベロッパー" },
+        { name: "Make", company: "Make", logo: "⚙️", flag: "🇨🇭", category: "自動化", rating: 4.6, price: "有料", individual: true, enterprise: true, integration: ["1000+"], desc: "ノーコード自動化。AIワークフロー構築。RPA実装。", fullDetail: "1000以上のアプリ連携。複雑な業務自動化が可能。【価格】月10ドル〜【対象】ビジネスプロセス自動化担当者" },
+        { name: "Zapier", company: "Zapier", logo: "⚡", flag: "🇺🇸", category: "自動化", rating: 4.7, price: "無料/有料", individual: true, enterprise: true, integration: ["6000+"], desc: "No-code自動化の定番。AIエージェント搭載。", fullDetail: "6000以上のアプリ連携。簡単UIで複雑な自動化実現。【価格】無料/月29ドル【対象】全ビジネスユーザー" },
+        { name: "Notion AI", company: "Notion", logo: "📝", flag: "🇺🇸", category: "生産性", rating: 4.5, price: "有料", individual: true, enterprise: true, integration: ["Notion"], desc: "ノート内にAI統合。執筆補助・要約自動化。ナレッジ管理革新。", fullDetail: "Notion Workspaceの全機能と統合。組織のナレッジベース構築に最適。【価格】Notion Plusで月13ドル【対象】個人・チーム・企業" }
     ];
 
-    let currentFilter = "すべて";
-    let showDarkAI = false;
+    let currentCategory = "すべて";
 
-    function toggleCategoryMenu() {
-        const slider = document.getElementById('category-slider');
-        const wrapper = document.getElementById('main-wrapper');
-        slider.classList.toggle('open');
-        wrapper.classList.toggle('menu-open');
+    function initCategories() {
+        const categories = [...new Set(aiDatabase.map(ai => ai.category))];
+        const tabsContainer = document.getElementById('category-tabs');
+        categories.forEach(cat => {
+            const tab = document.createElement('button');
+            tab.className = 'cat-tab';
+            tab.textContent = cat;
+            tab.onclick = () => filterByCategory(cat);
+            tabsContainer.appendChild(tab);
+        });
     }
 
-    function applyFilter(cat) {
-        currentFilter = cat;
-        const word = document.getElementById('search-input').value.toLowerCase();
-        let filtered = allAI.filter(item => 
-            (cat === "すべて" || item.cat === cat) &&
-            (item.name.toLowerCase().includes(word) || item.desc.toLowerCase().includes(word))
-        );
-        
-        if (cat !== "ダークAI" && !showDarkAI) {
-            filtered = filtered.filter(item => !item.dark18);
-        }
-        
+    function filterByCategory(cat) {
+        currentCategory = cat;
+        const filtered = cat === "すべて" ? aiDatabase : aiDatabase.filter(ai => ai.category === cat);
         renderCards(filtered);
+        
         document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
         event.target.classList.add('active');
     }
 
-    function renderCards(docs) {
+    function renderCards(ais) {
         const container = document.getElementById('ai-container');
-        container.innerHTML = docs.map(item => {
-            const stars = "★".repeat(item.rating) + "☆".repeat(5 - item.rating);
+        container.innerHTML = ais.map(ai => {
+            const stars = "★".repeat(Math.round(ai.rating)) + "☆".repeat(5 - Math.round(ai.rating));
+            const priceLabel = ai.price.includes("有料") ? `💰 ${ai.price}` : `💚 ${ai.price}`;
+            
             return `
-                <div class="ai-card ${item.dark18 ? 'dark-ai' : ''}">
-                    <div class="card-header">
+                <div class="ai-card">
+                    <div class="card-top">
+                        <div class="ai-header">
+                            <div class="ai-logo">${ai.logo}</div>
+                            <div class="ai-name-section">
+                                <div class="ai-name">${ai.name}</div>
+                                <div class="ai-company"><span class="flag">${ai.flag}</span> ${ai.company}</div>
+                            </div>
+                        </div>
                         <div class="card-star-box">${stars}</div>
-                        <div class="card-badges">
-                            ${item.jpNative ? '<div class="jp-badge">🇯🇵</div>' : ''}
-                            ${item.dark18 ? '<div class="dark-badge">⚠️</div>' : ''}
-                        </div>
                     </div>
-                    <div class="ai-company-row">
-                        <span class="flag-icon">${item.flag}</span>
-                        <div>
-                            <div class="ai-name">${item.name}</div>
-                            <div class="card-company">${item.company}</div>
-                        </div>
+
+                    <div class="meta-info">
+                        <div class="meta-tag">${priceLabel}</div>
+                        ${ai.individual ? '<div class="meta-tag">個人対応</div>' : ''}
+                        ${ai.enterprise ? '<div class="meta-tag">企業対応</div>' : ''}
+                        ${ai.integration && ai.integration.length > 0 ? `<div class="meta-tag">${ai.integration.slice(0, 2).join(', ')}</div>` : ''}
                     </div>
-                    <div>
-                        <span class="badge">${item.lang === 'JP' ? '日本語' : 'English'}</span>
-                        ${item.web ? '<span class="badge">Web</span>' : ''}
-                        ${item.app ? '<span class="badge">App</span>' : ''}
-                    </div>
-                    <div class="desc-box">${item.desc}</div>
-                    <div class="expand-detail">${item.detail}</div>
+
+                    <div class="desc-box">${ai.desc}</div>
+
                     <div class="btn-group">
-                        <a href="${item.url}" target="_blank" class="btn btn-primary">詳細</a>
-                        <button class="btn btn-outline" onclick="this.closest('.ai-card').classList.toggle('expand')">説明</button>
-                        <button class="btn btn-review" onclick="openReviewModal('${item.name}')">💬</button>
+                        <button class="btn btn-detail" onclick="openDetail('${ai.name}', '${ai.company}', \`${ai.fullDetail}\`, '${ai.integration && ai.integration.length > 0 ? `https://www.${ai.name.toLowerCase().replace(/\\s/g, '')}.com` : 'https://example.com'}')">詳細を見る</button>
+                        <button class="btn btn-review" onclick="alert('口コミ機能準備中...')">💬</button>
                     </div>
                 </div>
             `;
         }).join('');
     }
 
-    // モーダル関数
-    function openContactModal() { document.getElementById('contact-modal').classList.add('show'); }
-    function closeContactModal() { document.getElementById('contact-modal').classList.remove('show'); }
-    function submitContact(e) { e.preventDefault(); alert('ご送信ありがとうございます！'); closeContactModal(); }
-
-    function openSettingsModal() { document.getElementById('settings-modal').classList.add('show'); }
-    function closeSettingsModal() { document.getElementById('settings-modal').classList.remove('show'); }
-
-    function checkPassword() {
-        if (document.getElementById('pwd-input').value === '555335557') {
-            document.getElementById('settings-password').style.display = 'none';
-            document.getElementById('settings-content').style.display = 'block';
-            populateAiSelect();
-        } else {
-            alert('パスワードが間違っています');
-        }
+    function openDetail(name, company, detail, url) {
+        document.getElementById('modal-title').textContent = `${name} (${company})`;
+        document.getElementById('modal-detail').textContent = detail;
+        document.getElementById('modal-url').href = url;
+        document.getElementById('detail-modal').classList.add('show');
     }
 
-    function populateAiSelect() {
-        const select = document.getElementById('edit-ai-select');
-        select.innerHTML = '<option value="">-- 選択してください --</option>' + 
-            allAI.filter(ai => !ai.dark18).map((ai, idx) => `<option value="${idx}">${ai.name}</option>`).join('');
+    function closeDetailModal() {
+        document.getElementById('detail-modal').classList.remove('show');
     }
-
-    function loadAiForEdit() {
-        const idx = document.getElementById('edit-ai-select').value;
-        if (!idx) return;
-        const ai = allAI.filter(a => !a.dark18)[idx];
-        if (!ai) return;
-        document.getElementById('edit-rating').value = ai.rating;
-        document.getElementById('edit-desc').value = ai.desc;
-        document.getElementById('edit-detail').value = ai.detail;
-        document.getElementById('edit-jp').checked = ai.lang === 'JP';
-        document.getElementById('edit-en').checked = ai.lang === 'EN';
-        document.getElementById('edit-web').checked = ai.web;
-        document.getElementById('edit-app').checked = ai.app;
-        document.getElementById('edit-url').value = ai.url;
-        document.getElementById('edit-form').style.display = 'block';
-    }
-
-    function saveAiEdit() { alert('編集を保存しました！'); }
-
-    function openReviewModal(aiName) {
-        document.getElementById('review-ai-name').innerText = aiName;
-        document.getElementById('review-modal').classList.add('show');
-    }
-
-    function closeReviewModal() { document.getElementById('review-modal').classList.remove('show'); }
-    function submitReview(e) { e.preventDefault(); alert('口コミをありがとうございます！'); closeReviewModal(); }
 
     document.addEventListener('DOMContentLoaded', () => {
-        renderCards(allAI.filter(a => !a.dark18));
-        document.getElementById('search-input').addEventListener('input', () => applyFilter(currentFilter));
+        initCategories();
+        renderCards(aiDatabase);
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            const word = e.target.value.toLowerCase();
+            const filtered = aiDatabase.filter(ai => 
+                ai.name.toLowerCase().includes(word) ||
+                ai.company.toLowerCase().includes(word) ||
+                ai.desc.toLowerCase().includes(word)
+            );
+            renderCards(filtered);
+        });
     });
 </script>
 </body>
