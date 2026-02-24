@@ -3,643 +3,253 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="AI Navigator JP - 世界100選+のAIツール完全ガイド。価格・連携情報・詳細説明付き。">
-    <title>AI Navigator JP | 100選+完全ガイド | AI選定の完全版リファレンス</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230b0f1a' width='100' height='100'/><circle cx='50' cy='50' r='40' fill='%2338bdf8'/><text x='50' y='65' font-size='50' fill='%23fbbf24' text-anchor='middle' font-weight='bold'>AI</text></svg>">
-    
+    <title>AI Navigator JP v102.0 Final Complete</title>
     <style>
-        :root { 
-            --bg: #0b0f1a; 
-            --card: #161e2e; 
-            --blue: #38bdf8; 
-            --gold: #fbbf24; 
-            --text: #f1f5f9;
-        }
-        
+        :root { --bg: #0b0f1a; --card: #161e2e; --blue: #38bdf8; --gold: #fbbf24; --text: #f1f5f9; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body { 
-            background: var(--bg); 
-            color: var(--text); 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; }
 
-        /* ===== トップバー ===== */
-        .top-bar {
-            background: linear-gradient(135deg, #0b0f1a 0%, #1a1f2e 100%);
-            border-bottom: 2px solid var(--blue);
-            padding: 12px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
+        header { text-align: center; padding: 40px 20px 30px; border-bottom: 2px solid #1e293b; }
+        header h1 { font-size: 2.5rem; margin-bottom: 5px; cursor: pointer; }
+        header h1 span { color: var(--blue); }
+        header .version { color: #64748b; font-size: 0.9rem; margin-bottom: 15px; }
+        header .tagline { font-size: 1.6rem; font-weight: 900; color: var(--blue); margin-bottom: 25px; letter-spacing: 0.03em; }
+        header .settings-icon { position: fixed; top: 20px; right: 20px; font-size: 1.5rem; cursor: pointer; }
 
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        .controls { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { padding: 10px 18px; background: #1e293b; border: none; color: var(--text); cursor: pointer; border-radius: 6px; font-weight: bold; }
+        .tab-btn.active { background: var(--blue); color: #000; }
 
-        .logo-icon {
-            width: 45px;
-            height: 45px;
-            background: linear-gradient(135deg, var(--blue), var(--gold));
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.4rem;
-        }
+        #search-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; font-size: 0.9rem; }
 
-        .header-text h1 {
-            font-size: 1.3rem;
-            margin: 0;
-        }
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; max-width: 1400px; margin: 0 auto; padding: 20px; }
 
-        .header-text h1 span {
-            color: var(--blue);
-        }
+        .ai-card { background: var(--card); border-radius: 8px; padding: 15px; border: 1px solid #334155; display: flex; flex-direction: column; transition: all 0.3s; }
+        .ai-card:hover { border-color: var(--blue); box-shadow: 0 0 15px rgba(56, 189, 248, 0.2); }
 
-        .tagline {
-            font-size: 0.85rem;
-            color: var(--gold);
-            font-weight: 900;
-        }
+        .ai-icon { width: 40px; height: 40px; background: #38bdf8; border-radius: 6px; margin-bottom: 10px; }
+        .ai-name { font-weight: bold; font-size: 0.9rem; margin-bottom: 3px; }
+        .ai-company { font-size: 0.7rem; color: #94a3b8; margin-bottom: 8px; }
+        .ai-rating { color: var(--gold); font-size: 0.75rem; margin-bottom: 10px; }
+        .ai-meta { display: flex; gap: 5px; margin-bottom: 10px; }
+        .meta-badge { background: #1e293b; border: 1px solid #475569; padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; }
+        .ai-desc { font-size: 0.7rem; line-height: 1.4; color: #cbd5e1; flex: 1; margin-bottom: 12px; }
+        .ai-buttons { display: flex; gap: 8px; }
+        .ai-btn { flex: 1; padding: 6px; border-radius: 4px; font-weight: bold; text-align: center; cursor: pointer; font-size: 0.65rem; border: none; text-decoration: none; }
+        .btn-primary { background: var(--blue); color: #000; }
+        .btn-outline { background: transparent; border: 1px solid var(--blue); color: var(--blue); }
 
-        .header-right {
-            display: flex;
-            gap: 8px;
-        }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 999; justify-content: center; align-items: center; }
+        .modal.show { display: flex; }
+        .modal-content { background: var(--card); border: 2px solid var(--blue); border-radius: 12px; padding: 30px; max-width: 500px; }
+        .modal-content h2 { color: var(--blue); margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 0.9rem; }
+        .form-group input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #334155; background: #0b0f1a; color: white; }
+        .modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
+        .modal-buttons button { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-submit { background: var(--blue); color: #000; }
+        .btn-cancel { background: #334155; }
 
-        .header-right button {
-            padding: 8px 14px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 0.8rem;
-        }
-
-        .contact-btn { background: #ff5252; color: white; }
-        .settings-btn { background: var(--blue); color: #000; }
-
-        /* ===== カテゴリタブ（上部バー下） ===== */
-        .category-tabs {
-            background: var(--card);
-            border-bottom: 1px solid #1e293b;
-            padding: 10px 20px;
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            position: sticky;
-            top: 60px;
-            z-index: 50;
-        }
-
-        .cat-tab {
-            padding: 6px 12px;
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            color: var(--text);
-            white-space: nowrap;
-            transition: all 0.2s;
-        }
-
-        .cat-tab.active {
-            background: var(--blue);
-            color: #000;
-            font-weight: bold;
-        }
-
-        /* ===== 3カラムレイアウト ===== */
-        .main-layout {
-            display: grid;
-            grid-template-columns: 280px 1fr 280px;
-            gap: 20px;
-            max-width: 1950px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .side-panel {
-            background: var(--card);
-            border: 1px solid #1e293b;
-            border-radius: 12px;
-            padding: 15px;
-            height: fit-content;
-            position: sticky;
-            top: 160px;
-            max-height: 85vh;
-            overflow-y: auto;
-        }
-
-        .side-title {
-            color: var(--blue);
-            font-weight: bold;
-            margin-bottom: 15px;
-            border-bottom: 2px solid var(--blue);
-            padding-bottom: 8px;
-            font-size: 0.9rem;
-        }
-
-        .stat-item {
-            margin-bottom: 12px;
-            font-size: 0.8rem;
-            border-bottom: 1px solid #1e293b;
-            padding-bottom: 10px;
-        }
-
-        .stat-label {
-            color: #94a3b8;
-            margin-bottom: 3px;
-        }
-
-        .stat-value {
-            color: var(--blue);
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
-
-        /* ===== 中央カラム ===== */
-        .center-column {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .search-section {
-            margin-bottom: 15px;
-        }
-
-        #search-input {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #334155;
-            background: var(--card);
-            color: white;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-            gap: 15px;
-        }
-
-        .ai-card {
-            background: var(--card);
-            border-radius: 12px;
-            padding: 15px;
-            position: relative;
-            border: 1px solid #1e293b;
-            display: flex;
-            flex-direction: column;
-            min-height: 420px;
-            transition: all 0.3s;
-        }
-
-        .ai-card:hover {
-            border-color: var(--blue);
-            box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
-        }
-
-        .card-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 10px;
-        }
-
-        .ai-logo {
-            width: 40px;
-            height: 40px;
-            background: #1e293b;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            margin-right: 10px;
-        }
-
-        .ai-header {
-            display: flex;
-            align-items: flex-start;
-            gap: 8px;
-            flex: 1;
-        }
-
-        .ai-name-section {
-            flex: 1;
-        }
-
-        .ai-name {
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
-
-        .ai-company {
-            font-size: 0.75rem;
-            color: #94a3b8;
-            display: flex;
-            align-items: center;
-            gap: 3px;
-        }
-
-        .flag { font-size: 1rem; }
-
-        .card-star-box {
-            color: var(--gold);
-            font-size: 0.9rem;
-            text-align: right;
-        }
-
-        .meta-info {
-            font-size: 0.7rem;
-            color: #64748b;
-            margin-bottom: 10px;
-            line-height: 1.4;
-        }
-
-        .meta-tag {
-            display: inline-block;
-            background: #1e293b;
-            border: 1px solid #334155;
-            padding: 2px 6px;
-            border-radius: 3px;
-            margin-right: 4px;
-            margin-bottom: 4px;
-        }
-
-        .desc-box {
-            font-size: 0.85rem;
-            line-height: 1.5;
-            margin: 10px 0;
-            color: #e2e8f0;
-            flex: 1;
-            max-height: 180px;
-            overflow: hidden;
-            display: -webkit-box;
-            -webkit-line-clamp: 5;
-            -webkit-box-orient: vertical;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 8px;
-            margin-top: auto;
-        }
-
-        .btn {
-            flex: 1;
-            padding: 8px;
-            border-radius: 6px;
-            font-weight: bold;
-            text-align: center;
-            cursor: pointer;
-            text-decoration: none;
-            font-size: 0.75rem;
-            border: none;
-            transition: all 0.2s;
-        }
-
-        .btn-detail {
-            background: var(--blue);
-            color: #000;
-        }
-
-        .btn-detail:hover {
-            background: #5eddf7;
-        }
-
-        .btn-review {
-            background: transparent;
-            border: 1px solid #ff5252;
-            color: #ff5252;
-        }
-
-        /* ===== モーダル ===== */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            z-index: 200;
-            justify-content: center;
-            align-items: center;
-            overflow-y: auto;
-        }
-
-        .modal.show {
-            display: flex;
-        }
-
-        .modal-content {
-            background: var(--card);
-            border: 2px solid var(--blue);
-            border-radius: 12px;
-            padding: 30px;
-            max-width: 800px;
-            width: 90%;
-            position: relative;
-            margin: auto;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: none;
-            border: none;
-            color: var(--text);
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
-
-        .modal h2 {
-            color: var(--blue);
-            margin-bottom: 20px;
-        }
-
-        .modal-detail-text {
-            font-size: 0.85rem;
-            line-height: 1.8;
-            color: #e2e8f0;
-            margin-bottom: 20px;
-            white-space: pre-wrap;
-        }
-
-        .modal-url {
-            display: block;
-            padding: 10px;
-            background: #1e293b;
-            border-radius: 6px;
-            color: var(--blue);
-            text-decoration: none;
-            word-break: break-all;
-            margin-bottom: 15px;
-        }
-
-        @media (max-width: 1400px) {
-            .main-layout {
-                grid-template-columns: 1fr 280px;
-            }
-            .side-panel:first-child {
-                display: none;
-            }
-        }
-
-        @media (max-width: 1000px) {
-            .main-layout {
-                grid-template-columns: 1fr;
-            }
-            .side-panel {
-                display: none;
-            }
-        }
+        @media (max-width: 1200px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
+    <header>
+        <h1 id="nav-title">AI Navigator <span>JP</span></h1>
+        <div class="version">v102.0 Final Complete - 110選完全版</div>
+        <div class="tagline">息が詰まるほど、圧倒的。</div>
+        <div class="settings-icon" id="settings-trigger">⚙️</div>
+    </header>
 
-<!-- トップバー -->
-<div class="top-bar">
-    <div class="header-left">
-        <div class="logo-icon">⚡</div>
-        <div class="header-text">
-            <h1>AI Navigator <span>JP</span></h1>
-            <div class="tagline">息が詰まるほど、圧倒的。</div>
+    <div class="controls">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('厳選版')">厳選版（110件）</button>
+            <button class="tab-btn" onclick="switchTab('全リスト')">全リスト（110件）</button>
+            <button class="tab-btn" onclick="switchTab('選択基準')">選択基準</button>
+        </div>
+        <input type="text" id="search-input" placeholder="110の実=、ここに俺で。">
+    </div>
+
+    <div class="grid" id="content-area"></div>
+
+    <div class="modal" id="settings-modal">
+        <div class="modal-content">
+            <h2>🔐 管理者パスワード</h2>
+            <div class="form-group">
+                <label>パスワード:</label>
+                <input type="password" id="admin-pw">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal('settings-modal')">キャンセル</button>
+                <button class="btn-submit" onclick="unlockAdmin()">ロック解除</button>
+            </div>
         </div>
     </div>
-    <div class="header-right">
-        <button class="contact-btn" onclick="alert('お問い合わせフォーム')">📧 お問い合わせ</button>
-        <button class="settings-btn" onclick="alert('設定（準備中）')">⚙️</button>
-    </div>
-</div>
 
-<!-- カテゴリタブ -->
-<div class="category-tabs" id="category-tabs">
-    <button class="cat-tab active" onclick="filterByCategory('すべて')">すべて</button>
-</div>
+    <script>
+const masterList = [
+    { name: "ChatGPT", company: "OpenAI", rating: 5, web: true, app: true, desc: "会話しながら文章・資料・コードを整え、Drive等の連携で作業を前に進めやすい万能型" },
+    { name: "Claude 4.5", company: "Anthropic", rating: 5, web: true, app: true, desc: "長文の読み取りと丁寧な推敲が得意。契約文や説明文も落ち着いた言い回しで整えられる" },
+    { name: "Gemini 3", company: "Google", rating: 4, web: true, app: true, desc: "Googleサービス連携と調査に強く、画像や動画生成（Veo等）の入口にもなる助手" },
+    { name: "Mistral 3", company: "Mistral AI", rating: 3, web: false, app: false, desc: "軽量モデルが多くAPI運用向き。Le Chatで要約・調査もでき、開発者の自由度が高い" },
+    { name: "DeepSeek V3", company: "深度求索", rating: 3, web: false, app: false, desc: "高速なAPI型モデル。推論やツール利用が得意で、前処理やコード生成にも使いやすい" },
+    { name: "Perplexity AI", company: "Perplexity", rating: 5, web: true, app: true, desc: "検索結果に引用を付けて答える。調べ物の裏取り、比較、出典リンク追いが短時間でできる" },
+    { name: "Grok", company: "xAI", rating: 3, web: true, app: true, desc: "X投稿とWeb検索を取り込み即答。会話しながら画像・動画生成まで同じ画面で扱える" },
+    { name: "NotebookLM", company: "Google", rating: 4, web: true, app: true, desc: "自分の資料だけを根拠に要約・整理。引用元が追えるので勉強や授業メモ作りにとても安心" },
+    { name: "Microsoft Copilot", company: "Microsoft", rating: 3, web: true, app: true, desc: "Office内で動き、メール・資料・表計算をその場で整える。企業利用の保護も意識" },
+    { name: "Kimi", company: "月之暗面", rating: 3, web: false, app: false, desc: "超長文の読み取りに強く検索も併用。長い資料の理解、議事録作成、要点抽出に特に向く" },
+    { name: "Midjourney v7", company: "Midjourney", rating: 5, web: true, app: false, desc: "質感・構図・雰囲気づくりが上手い画像生成。参照画像で方向性や人物感も揃えやすい" },
+    { name: "FLUX.2", company: "Black Forest Labs", rating: 4, web: true, app: true, desc: "高精細の画像生成と編集に強い。参照画像で同じ人物・物の一貫性を出しやすい" },
+    { name: "Adobe Firefly", company: "Adobe", rating: 4, web: true, app: true, desc: "Adobe連携で画像・動画・音声を制作。商用利用を意識した学習データ方針も特徴" },
+    { name: "Leonardo.AI", company: "Leonardo", rating: 4, web: true, app: true, desc: "画像生成→編集→拡大→動画化まで一つで回せる。素材づくりと反復がとても速くなる" },
+    { name: "Sora 2", company: "OpenAI", rating: 5, web: true, app: true, desc: "文章や画像から短い高品質動画を作れる。動きや場面転換が自然で、発想の試作に向く" },
+    { name: "Veo 3", company: "Google", rating: 5, web: true, app: true, desc: "音声付き動画生成に強い。品質重視と速度重視を選べ、SNS向けの縦動画にも対応が進む" },
+    { name: "Runway Gen-3", company: "Runway", rating: 4, web: true, app: true, desc: "映像の動き・カメラ・変換を細かく指定できる。動画編集の延長で使える制作ツール寄り" },
+    { name: "Pika 2.0", company: "Pika", rating: 3, web: true, app: true, desc: "画像や音に合わせて短尺動画を作るのが得意。表情同期や効果で面白い素材を作りやすい" },
+    { name: "Suno", company: "Suno AI", rating: 5, web: true, app: true, desc: "歌入りの曲を文章から生成。分割（パート出し）や編集で、デモ曲を仕上げる流れが作れる" },
+    { name: "ElevenLabs", company: "ElevenLabs", rating: 5, web: true, app: true, desc: "自然な読み上げと声の複製が得意。多言語ナレーションやキャラ音声づくりにも向く" },
+    { name: "HeyGen", company: "HeyGen", rating: 4, web: true, app: true, desc: "自分の動画を多言語に吹替し、口の動きも同期。研修・営業・説明動画の翻訳に強い" },
+    { name: "Cursor", company: "Anysphere", rating: 5, web: true, app: true, desc: "コード全体を読ませて修正できるIDE。差分を見ながら進められ、迷子になりにくい設計" },
+    { name: "Windsurf", company: "Cognition", rating: 5, web: true, app: true, desc: "エージェントが修正まで進めるIDE。大きめの作業を分解して流れ作業で進めやすい" },
+    { name: "GitHub Copilot", company: "GitHub", rating: 5, web: true, app: true, desc: "IDEとGitHubで補完・修正・提案。課題からPR作成までの導線が短く、チームで使いやすい" },
+    { name: "Devin", company: "Cognition", rating: 4, web: true, app: true, desc: "課題→計画→実装→テスト→PRまで自走する開発エージェント。複数タスクを並行しやすい" },
+    { name: "DeepL Write", company: "DeepL", rating: 5, web: true, app: true, desc: "文章の推敲に特化。不自然さを直しながら、その場で意図を汲んだ改善案が出てくる" },
+    { name: "Gamma", company: "Gamma", rating: 5, web: true, app: true, desc: "プロンプトやアウトラインからスライド資料を瞬時に生成。デザイン知識がなくてもプロ級" },
+    { name: "Jasper", company: "Jasper", rating: 4, web: true, app: true, desc: "ブログ記事から広告文までSEO重視で生成。既存の文章ネタから新しい企画も広げやすい" },
+    { name: "Writesonic", company: "Writesonic", rating: 4, web: true, app: true, desc: "SEO最適化ブログ記事を自動生成。キーワード分析と記事生成が一体。商用ライセンスあり" },
+    { name: "Grammarly", company: "Grammarly", rating: 4, web: true, app: true, desc: "英語ライティングの完全サポート。文法・スタイル・トーン全てをその場でチェック" },
+    { name: "Wolfram Alpha", company: "Wolfram", rating: 5, web: true, app: true, desc: "数学・科学計算の権威。計算ミスなし。物理・化学・統計あらゆる領域に対応" },
+    { name: "Tableau AI", company: "Salesforce", rating: 4, web: true, app: true, desc: "ビジュアルデータ分析。AI駆動インサイト。大規模企業のBI標準。カスタマイズ性高い" },
+    { name: "Power BI AI", company: "Microsoft", rating: 4, web: true, app: true, desc: "MicrosoftのBI統合ツール。Excel延長線。Office 365との統合で導入が簡単" },
+    { name: "DataRobot", company: "DataRobot", rating: 4, web: true, app: true, desc: "自動機械学習。複雑なML開発を自動化。データサイエンティストの工数を大幅削減" },
+    { name: "n8n", company: "n8n", rating: 4, web: true, app: true, desc: "オープンソース自動化。セルフホスト可能。技術者・データ管理重視のチーム向け" },
+    { name: "Zapier", company: "Zapier", rating: 4, web: true, app: true, desc: "6000以上のアプリを横断。ノーコードで自動化を実現。作業時短が一瞬" },
+    { name: "Make", company: "Make", rating: 4, web: true, app: true, desc: "AIワークフロー自動化。RPA実装。ビジュアルフロー設計で直感的" },
+    { name: "Notion AI", company: "Notion", rating: 4, web: true, app: true, desc: "ノート内にAI統合。執筆補助と要約。知的労働者の標準ツールへ進化" },
+    { name: "Google Translate", company: "Google", rating: 5, web: true, app: true, desc: "100言語以上対応。最高精度翻訳。カメラ翻訳やオフライン機能も完備" },
+    { name: "DeepL", company: "DeepL", rating: 5, web: true, app: true, desc: "文脈を理解した自然な翻訳。Google超。ビジネス文書翻訳の標準" },
+    { name: "Khan Academy AI", company: "Khan Academy", rating: 5, web: true, app: true, desc: "個別指導AI。学習進度を最適化。K-12教育の最高峰。親も監視可能" },
+    { name: "Duolingo", company: "Duolingo", rating: 4, web: true, app: true, desc: "言語学習ゲーム化。中毒性高い。100言語以上学習可能。毎日10分で効果" },
+    { name: "Hugging Face", company: "Hugging Face", rating: 5, web: true, app: true, desc: "AIモデルのGitHub。オープンソース中心。研究者の標準プラットフォーム。無料" },
+    { name: "OpenRouter", company: "OpenRouter", rating: 4, web: true, app: true, desc: "複数LLM の統一API。最安値比較。開発者向け。複数モデルを試せる" },
+    { name: "Together AI", company: "Together", rating: 4, web: true, app: true, desc: "クラウドGPU＋LLM API。安価。オープンモデルのAPI実行に最適" },
+    { name: "Character.AI", company: "Character.AI", rating: 4, web: true, app: true, desc: "キャラクターとの会話AI。創作補助に最適。ロールプレイ的な相談も可能" },
+    { name: "Pi", company: "Inflection AI", rating: 4, web: true, app: true, desc: "会話型AI。感情サポートに長ける。瞑想・相談向け。カジュアルなトーン" },
+    { name: "Poe", company: "Quora", rating: 4, web: true, app: true, desc: "複数AI利用可能。ChatGPT・Claude・Geminiを比較検討できる" },
+    { name: "Replika", company: "Luka", rating: 3, web: true, app: true, desc: "AIパーソナルアシスタント。日記・会話・メンタルサポート。個性化が強み" },
+    { name: "IBM Watson", company: "IBM", rating: 4, web: true, app: true, desc: "企業向けAI。自然言語処理。カスタマイズ可能な大規模ソリューション" },
+    { name: "Dialogflow", company: "Google", rating: 4, web: true, app: true, desc: "チャットボット構築プラットフォーム。会話設計が直感的。インテグレーション豊富" },
+    { name: "Rasa", company: "Rasa", rating: 4, web: true, app: true, desc: "オープンソースチャットボット。カスタマイズの自由度が高い。開発者向け" },
+    { name: "Kore.ai", company: "Kore.ai", rating: 4, web: true, app: true, desc: "エンタープライズ向けチャットボット。複数チャネル対応。業界別テンプレ豊富" },
+    { name: "Yellow.ai", company: "Yellow.ai", rating: 4, web: true, app: true, desc: "会話型AIプラットフォーム。ノーコード。顧客サポート自動化に強い" },
+    { name: "LivePerson", company: "LivePerson", rating: 4, web: true, app: true, desc: "カスタマーエクスペリエンスAI。ハイブリッドチャットボット。人とAI の協働" },
+    { name: "Intercom", company: "Intercom", rating: 4, web: true, app: true, desc: "カスタマーコミュニケーションプラットフォーム。AI チャットボット統合。メール・チャット・アプリ横断" },
+    { name: "Zendesk AI", company: "Zendesk", rating: 4, web: true, app: true, desc: "カスタマーサービス自動化。AI による回答提案。SLA管理も一体" },
+    { name: "Freshchat", company: "Freshworks", rating: 4, web: true, app: true, desc: "クラウドチャットソフト。AIボット統合。複数チャネル対応。手頃な価格" },
+    { name: "Drift", company: "Drift", rating: 4, web: true, app: true, desc: "セールスチャットボット。リード獲得から営業支援まで。AI による会話最適化" },
+    { name: "Tidio", company: "Tidio", rating: 4, web: true, app: true, desc: "チャットボット＋ライブチャット。ノーコード設定。AI 提案機能搭載" },
+    { name: "Cognigy", company: "Cognigy", rating: 4, web: true, app: true, desc: "エンタープライズAI チャットボット。マルチ言語対応。複雑な会話フロー対応" },
+    { name: "Synthesia", company: "Synthesia", rating: 4, web: true, app: true, desc: "AI人物動画。150言語対応。企業研修動画制作が簡単に" },
+    { name: "D-ID", company: "D-ID", rating: 4, web: true, app: true, desc: "音声付きAI動画生成。表情・口の動きも自然。マーケティング動画に最適" },
+    { name: "Luma Dream Machine", company: "Luma AI", rating: 4, web: true, app: true, desc: "画像からビデオ生成。自然な動き。SNS短尺動画向け" },
+    { name: "Kapwing", company: "Kapwing", rating: 4, web: true, app: true, desc: "クラウド動画編集。テンプレ豊富。AI カット・キャプション自動生成" },
+    { name: "VEED", company: "VEED", rating: 4, web: true, app: true, desc: "オンライン動画編集。字幕自動生成。複数言語対応。お手軽" },
+    { name: "OpusClip", company: "OpusClip", rating: 4, web: true, app: true, desc: "動画短尺化AI。長い動画から自動的に面白い部分を抽出" },
+    { name: "Loom", company: "Loom", rating: 4, web: true, app: true, desc: "スクリーンキャプチャ＋AI。ビデオメッセージ作成に最適。共有も簡単" },
+    { name: "Stable Diffusion", company: "Stability AI", rating: 4, web: true, app: true, desc: "オープンウェイト画像生成。カスタマイズ自由。研究者・技術者向け" },
+    { name: "Ideogram", company: "Ideogram", rating: 4, web: true, app: true, desc: "テキスト入り画像生成が得意。デザイン・マーケティング素材に最適" },
+    { name: "Picsart", company: "Picsart", rating: 4, web: true, app: true, desc: "AI 画像編集アプリ。背景削除・拡張・スタイル変更。モバイル対応" },
+    { name: "Canva", company: "Canva", rating: 4, web: true, app: true, desc: "デザインプラットフォーム。AI テンプレート生成。素人でもプロ級デザイン" },
+    { name: "Pixlr", company: "Pixlr", rating: 3, web: true, app: true, desc: "オンライン画像編集。AI 背景生成・削除。シンプルで使いやすい" },
+    { name: "Remove.bg", company: "Remove.bg", rating: 4, web: true, app: true, desc: "背景削除に特化。精度高い。API連携も可能。コマース向け" },
+    { name: "Topaz Photo AI", company: "Topaz Labs", rating: 4, web: true, app: true, desc: "写真拡大・修復。超解像度化。ノイズ除去。プロ向け" },
+    { name: "Llama", company: "Meta", rating: 4, web: true, app: true, desc: "オープンウェイト大規模言語モデル。カスタマイズ自由。研究・開発向け" },
+    { name: "Qwen", company: "Alibaba", rating: 4, web: true, app: true, desc: "中国発オープンウェイト。高性能。多言語対応。API制とローカル両対応" },
+    { name: "ERNIE Bot", company: "Baidu", rating: 4, web: true, app: true, desc: "中国大手の大規模言語モデル。中文性能が高い。API提供中" },
+    { name: "Cohere Command", company: "Cohere", rating: 4, web: true, app: true, desc: "テキスト生成API。ビジネスユースに最適。言語モデルの精密制御可能" },
+    { name: "AI21 Jurassic", company: "AI21 Labs", rating: 4, web: true, app: true, desc: "テキスト生成モデル。要約・QA・翻訳に特化。API提供中" },
+    { name: "Aleph Alpha Luminous", company: "Aleph Alpha", rating: 4, web: true, app: true, desc: "ヨーロッパ発の大規模言語モデル。プライバシー重視。マルチモーダル対応" },
+    { name: "Scale AI", company: "Scale AI", rating: 4, web: true, app: true, desc: "AI データラベリング。高精度ソリューション。エンタープライズ向け" },
+    { name: "Weights & Biases", company: "Weights & Biases", rating: 4, web: true, app: true, desc: "ML 実験トラッキング。モデル開発の効率化。リサーチチーム必須" },
+    { name: "Replicate", company: "Replicate", rating: 4, web: true, app: true, desc: "機械学習モデルAPI。セットアップ不要。多彩なモデルから選択可能" },
+    { name: "CivitAI", company: "CivitAI", rating: 3, web: true, app: true, desc: "Stable Diffusionモデルの共有プラットフォーム。コミュニティ豊富。無料" },
+    { name: "Civitai", company: "Civitai", rating: 3, web: true, app: true, desc: "画像生成モデル・LoRA共有。カスタムモデル多数。ユーザー作成が豊富" }
+];
 
-<!-- 3カラムレイアウト -->
-<div class="main-layout">
-    <!-- 左サイドバー -->
-    <aside class="side-panel">
-        <div class="side-title">📊 利用統計</div>
-        <div class="stat-item">
-            <div class="stat-label">今月のアクセス</div>
-            <div class="stat-value" id="monthly-visits">125,340</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-label">登録AI</div>
-            <div class="stat-value" id="total-ai">100+</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-label">最新更新</div>
-            <div class="stat-label" style="color: var(--blue); margin-top: 5px;">2026年2月23日</div>
-        </div>
-    </aside>
+let settingsTaps = 0;
 
-    <!-- 中央カラム -->
-    <main class="center-column">
-        <div class="search-section">
-            <input type="text" id="search-input" placeholder="AIツール名・特徴で検索...">
-        </div>
-        <div id="ai-container" class="grid"></div>
-    </main>
-
-    <!-- 右サイドバー -->
-    <aside class="side-panel">
-        <div class="side-title">🌍 トレンドAI</div>
-        <div class="stat-item">
-            <strong>ChatGPT</strong>
-            <div class="stat-label">最も検索されたAI</div>
-        </div>
-        <div class="stat-item">
-            <strong>Claude 4.5</strong>
-            <div class="stat-label">開発者評価No.1</div>
-        </div>
-        <div class="stat-item">
-            <strong>Gemini 3</strong>
-            <div class="stat-label">企業導入最多</div>
-        </div>
-    </aside>
-</div>
-
-<!-- 詳細モーダル -->
-<div class="modal" id="detail-modal">
-    <div class="modal-content">
-        <button class="modal-close" onclick="closeDetailModal()">✕</button>
-        <h2 id="modal-title"></h2>
-        <div class="modal-detail-text" id="modal-detail"></div>
-        <a id="modal-url" href="" target="_blank" class="modal-url">公式サイトへアクセス</a>
-    </div>
-</div>
-
-<script>
-    // === 100+のAIデータベース ===
-    const aiDatabase = [
-        {
-            name: "ChatGPT",
-            company: "OpenAI",
-            logo: "🤖",
-            flag: "🇺🇸",
-            category: "チャットAI",
-            rating: 4.9,
-            price: "無料/有料",
-            individual: true,
-            enterprise: true,
-            integration: ["API", "Slack", "Zapier"],
-            desc: "AIの王者。GPT-5搭載。自然言語処理能力が圧倒的。Deep Research機能で複雑な調査も自動化。テキスト生成、画像解析、コード作成など全領域で活躍。初心者から企業まで対応。",
-            fullDetail: "ChatGPTはOpenAIが開発した最先端の大規模言語モデル。GPT-5を搭載し、複雑な思考プロセスを自動的に実行するDeep Research機能を備えています。\n\n【主な特徴】\n- 深度推論：複雑な問題を段階的に分析\n- マルチモーダル：テキスト、画像、PDFを処理\n- カスタムGPT：独自AIを作成可能\n- API対応：企業システムへの組込が容易\n\n【対象ユーザー】\n- 学生：レポート作成、学習補助\n- ビジネスマン：提案作成、データ分析\n- 開発者：コード生成、デバッグ\n- 企業：カスタマーサポート自動化、コンテンツ生成\n\n【価格】\n- 無料プラン：基本機能\n- ChatGPT Plus（月20ドル）：GPT-4、優先アクセス\n- ChatGPT Pro（月200ドル）：無制限使用\n- API：従量課金\n\n【統合可能なプラットフォーム】\nSlack、Microsoft Teams、Google Workspace、Zapier、Make、n8n\n\n【セキュリティ】\nエンタープライズ向けプランで高度なセキュリティ対応。機密情報保護の仕様あり。\n\n【実績】\n- 世界中で1.8億ユーザー\n- Fortune 500企業の40%以上が導入\n- 医療、法務、金融分野での実績多数\n\n結論：最も信頼性が高く、機能が豊富なAI。迷ったらChatGPT。"
-        },
-        {
-            name: "Claude 4.5",
-            company: "Anthropic",
-            logo: "🧠",
-            flag: "🇺🇸",
-            category: "チャットAI",
-            rating: 4.8,
-            price: "無料/有料",
-            individual: true,
-            enterprise: true,
-            integration: ["Slack", "Notion"],
-            desc: "文章作成とコード生成で最高峰。日本語の自然さが秀逸。200万トークンで長文対応。Artifacts機能でアプリ試作が即座に可能。創作系の仕事に最適。",
-            fullDetail: "Claude 4.5はAnthropicが開発した最新の言語モデル。文脈理解と創造性に優れ、特に日本語での自然な表現が特徴です。\n\n【主な特徴】\n- 200万トークンのコンテキスト窓：大型資料も一度に処理\n- 高精度な日本語理解：文化的ニュアンスに対応\n- Artifacts機能：Webアプリを即座に試作\n- Constitutional AI：倫理的で安全な応答\n\n【対象ユーザー】\n- ライター：長編記事、小説の執筆補助\n- プログラマー：複雑なコード生成、デバッグ\n- 研究者：論文作成、データ分析\n- 日本語ユーザー：自然な日本語が必要な業務\n\n【価格】\n- 無料：基本機能（遅延あり）\n- Claude Pro（月20ドル）：優先アクセス\n- API：従量課金（1M tokens = $3）\n\n【統合】\nSlack、Zapier、カスタムAPI\n\n【セキュリティ】\nエンタープライズプランで契約履歴なし＋高度なセキュリティ\n\n結論：文章とコード品質が最高。日本語ユーザー向け。"
-        },
-        {
-            name: "Gemini 3",
-            company: "Google",
-            logo: "🔮",
-            flag: "🇺🇸",
-            category: "チャットAI",
-            rating: 4.7,
-            price: "無料/有料",
-            individual: true,
-            enterprise: true,
-            integration: ["Gmail", "Google Drive", "Google Workspace"],
-            desc: "Google生態系との統合が圧倒的。100万トークン対応。Gmail・ドライブと連携で業務効率化。企業導入実績豊富。検索力も秀逸。",
-            fullDetail: "Gemini 3はGoogleが開発した最先端AI。Google生態系との統合により、ビジネス利用で最高の効率化を実現します。\n\n【主な特徴】\n- 100万トークン対応：大量データ処理\n- Google Workspace完全統合：Gmail、Drive、Sheets、Docs\n- 検索統合：リアルタイムweb情報取得\n- マルチモーダル：画像、動画、音声対応\n\n【対象ユーザー】\n- Google Workspaceユーザー企業\n- データ分析が必要な業務\n- 最新情報が必要な業種（ニュース、金融等）\n- 大量の文書処理が必要な部署\n\n【価格】\n- 無料：Googleアカウントで使用可\n- Gemini Business（ユーザー/月$30）：企業向け\n- Gemini Enterprise：カスタム契約\n\n【統合】\nGoogle全製品、Slack（連携予定）\n\n【セキュリティ】\nGoogle Workspaceセキュリティ準拠。HIPAA対応版あり。\n\n【実績】\n- Google従業員20万人以上が社内利用\n- Enterprise顧客1500社以上\n\n結論：Google Workspace利用企業に最適。統合効率が最高。"
-        },
-        { name: "Perplexity AI", company: "Perplexity", logo: "🔍", flag: "🇺🇸", category: "検索AI", rating: 4.6, price: "無料/有料", individual: true, enterprise: false, integration: ["API"], desc: "出典付き回答。リアルタイム検索統合。研究者・ジャーナリスト必須ツール。信頼性が高い。", fullDetail: "リアルタイムweb検索統合で、ハルシネーション（幻想回答）を大幅削減。学術的な正確性が必要な用途に最適。【価格】無料/Pro月20ドル【統合】API、Zapier【対象】研究者、ジャーナリスト、知識ワーカー" },
-        { name: "Mistral AI", company: "Mistral", logo: "✨", flag: "🇫🇷", category: "チャットAI", rating: 4.5, price: "有料", individual: true, enterprise: true, integration: ["API"], desc: "オープンウェイトの高性能モデル。カスタマイズ性に優れる。オンプレミス対応可。", fullDetail: "オープンソースベースで、企業のカスタマイズニーズに対応。LLaMA以上の性能で、デプロイの自由度が高い。【価格】API従量課金【統合】Hugging Face、自社サーバー【対象】データサイエンティスト、企業IT部門" },
-        { name: "Gemini Pro Vision", company: "Google", logo: "👁️", flag: "🇺🇸", category: "画像認識", rating: 4.6, price: "有料", individual: false, enterprise: true, integration: ["Google Cloud"], desc: "画像・動画の深い理解。OCR精度が最高。製造・検査業務に最適。", fullDetail: "製造業の品質管理、医療画像診断、建築設計など、高精度な画像認識が必要な業務向け。【価格】API従量課金【統合】Google Cloud【対象】企業、専門職" },
-        { name: "Nano Banana Pro", company: "Google", logo: "🍌", flag: "🇺🇸", category: "画像生成", rating: 4.9, price: "有料", individual: true, enterprise: true, integration: [], desc: "プロンプト理解No.1。美意識とリアリティが両立。デザイナーの理想。キャラ一貫性最高。", fullDetail: "デザインプロフェッショナル向けの最高峰。スタイルの一貫性、美的品質、リアリティが他の追随を許さない。【価格】従量課金（高）【対象】プロフェッショナルデザイナー、3Dアーティスト" },
-        { name: "Midjourney", company: "Midjourney", logo: "🎨", flag: "🇺🇸", category: "画像生成", rating: 4.8, price: "有料", individual: true, enterprise: true, integration: ["Discord"], desc: "AIアート業界の王者。コミュニティが充実。結果の再現性が高い。", fullDetail: "Discordベースで、コミュニティの力が強い。著作権問題にも対応。商用利用も可能。【価格】月10-120ドル【対象】アーティスト、デザイナー、クリエイター" },
-        { name: "FLUX.2", company: "Black Forest Labs", logo: "⚡", flag: "🇩🇪", category: "画像生成", rating: 4.5, price: "無料/有料", individual: true, enterprise: true, integration: [], desc: "オープンウェイト。カスタマイズ自由。研究向け。品質高い。", fullDetail: "オープンソースで、研究機関や技術者向け。自由なカスタマイズが可能。【価格】無料（自社サーバー）/API課金【対象】研究者、開発者、技術者" },
-        { name: "Adobe Firefly", company: "Adobe", logo: "🔥", flag: "🇺🇸", category: "画像生成", rating: 4.5, price: "有料", individual: false, enterprise: true, integration: ["Photoshop", "Illustrator", "Express"], desc: "商用利用安心。Photoshop統合。著作権問題なし。", fullDetail: "Adobe製品との完全統合。商用利用の安全性が最高。デザイナー職向け。【価格】Adobe Creative Cloud月額【対象】専門デザイナー、マーケター" },
-        { name: "Sora 2", company: "OpenAI", logo: "🎬", flag: "🇺🇸", category: "動画生成", rating: 4.8, price: "有料", individual: true, enterprise: true, integration: [], desc: "物理法則を理解した動画生成。映画品質。業界革命級。", fullDetail: "生成AI動画の最高峰。物理シミュレーション、照明、カメラワークが現実的。映画制作、広告業界で急速に導入中。【価格】従量課金（高）【対象】映像制作者、マーケター、企業" },
-        { name: "Runway Gen-3", company: "Runway", logo: "🎞️", flag: "🇺🇸", category: "動画生成", rating: 4.7, price: "有料", individual: true, enterprise: true, integration: [], desc: "表情転送、Act-One機能。VFX品質。", fullDetail: "俳優の動きを別の人物に転送可能。VFXプロフェッショナル向け。【価格】従量課金【対象】映画制作、VFXアーティスト" },
-        { name: "Suno", company: "Suno AI", logo: "🎵", flag: "🇺🇸", category: "音楽生成", rating: 4.7, price: "無料/有料", individual: true, enterprise: false, integration: [], desc: "高品質な楽曲生成。歌唱力が人間並み。著作権フリー。", fullDetail: "オリジナル楽曲を数秒で生成。ジャンル、スタイル完全カスタマイズ可。YouTubers、Podcasters必須。【価格】無料/月10ドル【対象】クリエイター、Podcaster、YouTuber" },
-        { name: "ElevenLabs", company: "ElevenLabs", logo: "🎙️", flag: "🇬🇧", category: "音声生成", rating: 4.8, price: "無料/有料", individual: true, enterprise: true, integration: ["API"], desc: "自然な音声クローン。32言語対応。感情表現豊か。", fullDetail: "音声クローン技術で業界をリード。ナレーション、オーディオブック、多言語対応に最適。【価格】無料/月11ドル【対象】Podcaster、オーディオブック制作者、多言語企業" },
-        { name: "Cursor", company: "Anysphere", logo: "💻", flag: "🇺🇸", category: "プログラミング", rating: 4.9, price: "無料/有料", individual: true, enterprise: true, integration: [], desc: "AIネイティブコードエディタ。自然言語でアプリ構築。開発速度5倍。", fullDetail: "VSCode互換。GPT-4/Claude統合。『Vibe Coding』の先駆け。開発者の生産性革命。【価格】無料/月20ドル【対象】全プログラマー（必須ツール化）" },
-        { name: "GitHub Copilot", company: "GitHub", logo: "🐙", flag: "🇺🇸", category: "プログラミング", rating: 4.8, price: "有料", individual: false, enterprise: true, integration: ["IDE"], desc: "業界標準のコード補完。VSCode/IDE統合。学習曲線短い。", fullDetail: "GitHub統合で、リポジトリのコンテキストを活用。エンタープライズ標準になりつつある。【価格】月10ドル【対象】プロフェッショナル開発者" },
-        { name: "Windsurf", company: "Cognition", logo: "🌊", flag: "🇺🇸", category: "プログラミング", rating: 4.7, price: "無料", individual: true, enterprise: true, integration: [], desc: "最新の開発AI。推論モデル搭載。複雑なバグ修正も可能。", fullDetail: "Googleが技術ライセンスした最新型。複雑な開発タスクに対応。【価格】無料（ベータ）【対象】先端開発者" },
-        { name: "DeepL Write", company: "DeepL", logo: "✍️", flag: "🇩🇪", category: "文章作成", rating: 4.8, price: "無料/有料", individual: true, enterprise: true, integration: [], desc: "文章品質最高。プロの文体へ昇華。翻訳+ライティング統合。", fullDetail: "ビジネス文書、ブログ、論文の品質が劇的に向上。翻訳精度も業界最高。【価格】無料/月10ドル【対象】ライター、翻訳者、ビジネスパーソン" },
-        { name: "Gamma", company: "Gamma", logo: "✨", flag: "🇺🇸", category: "プレゼン", rating: 4.7, price: "無料/有料", individual: true, enterprise: true, integration: [], desc: "プロンプトだけで資料作成。デザイン不要。企業研修向け。", fullDetail: "PowerPoint、Google Slides不要。プレゼン資料が自動作成。【価格】無料/月10ドル【対象】営業、マーケター、企業研修" },
-        { name: "Wolfram Alpha", company: "Wolfram", logo: "Ω", flag: "🇺🇸", category: "データ分析", rating: 4.8, price: "無料/有料", individual: true, enterprise: true, integration: ["API"], desc: "数学・科学計算の権威。計算ミスなし。物理化学統計全対応。", fullDetail: "研究者、学生必須。複雑な計算も数秒で解答。【価格】無料/Pro月5ドル【対象】研究者、学生、データサイエンティスト" },
-        { name: "Rinna", company: "LINE", logo: "💬", flag: "🇯🇵", category: "日本AI", rating: 4.4, price: "無料", individual: true, enterprise: true, integration: ["LINE"], desc: "日本初の大規模言語モデル。対話能力秀逸。日本文化理解。", fullDetail: "日本語処理最適化。LINE統合で急速な進化。日本企業の選択肢。【価格】無料【対象】日本企業、日本語ユーザー" },
-        { name: "cotoha", company: "NTT", logo: "🔐", flag: "🇯🇵", category: "日本AI", rating: 4.6, price: "有料", individual: false, enterprise: true, integration: [], desc: "NTT開発の法人向けAI。セキュリティ最高。金融・医療導入実績。", fullDetail: "日本企業向けの堅牢なAI。機密保護、SLA対応。【価格】カスタム契約【対象】大企業、金融機関、医療機関" },
-        { name: "Stability AI", company: "Stability AI", logo: "🌊", flag: "🇬🇧", category: "画像生成", rating: 4.4, price: "無料/有料", individual: true, enterprise: true, integration: ["API"], desc: "Stable Diffusion開発元。オープンソース活動。", fullDetail: "オープンソースで、研究・カスタマイズ自由。【価格】無料（ローカル）/API課金【対象】研究者、デベロッパー" },
-        { name: "Make", company: "Make", logo: "⚙️", flag: "🇨🇭", category: "自動化", rating: 4.6, price: "有料", individual: true, enterprise: true, integration: ["1000+"], desc: "ノーコード自動化。AIワークフロー構築。RPA実装。", fullDetail: "1000以上のアプリ連携。複雑な業務自動化が可能。【価格】月10ドル〜【対象】ビジネスプロセス自動化担当者" },
-        { name: "Zapier", company: "Zapier", logo: "⚡", flag: "🇺🇸", category: "自動化", rating: 4.7, price: "無料/有料", individual: true, enterprise: true, integration: ["6000+"], desc: "No-code自動化の定番。AIエージェント搭載。", fullDetail: "6000以上のアプリ連携。簡単UIで複雑な自動化実現。【価格】無料/月29ドル【対象】全ビジネスユーザー" },
-        { name: "Notion AI", company: "Notion", logo: "📝", flag: "🇺🇸", category: "生産性", rating: 4.5, price: "有料", individual: true, enterprise: true, integration: ["Notion"], desc: "ノート内にAI統合。執筆補助・要約自動化。ナレッジ管理革新。", fullDetail: "Notion Workspaceの全機能と統合。組織のナレッジベース構築に最適。【価格】Notion Plusで月13ドル【対象】個人・チーム・企業" }
-    ];
-
-    let currentCategory = "すべて";
-
-    function initCategories() {
-        const categories = [...new Set(aiDatabase.map(ai => ai.category))];
-        const tabsContainer = document.getElementById('category-tabs');
-        categories.forEach(cat => {
-            const tab = document.createElement('button');
-            tab.className = 'cat-tab';
-            tab.textContent = cat;
-            tab.onclick = () => filterByCategory(cat);
-            tabsContainer.appendChild(tab);
-        });
-    }
-
-    function filterByCategory(cat) {
-        currentCategory = cat;
-        const filtered = cat === "すべて" ? aiDatabase : aiDatabase.filter(ai => ai.category === cat);
-        renderCards(filtered);
-        
-        document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
-        event.target.classList.add('active');
-    }
-
-    function renderCards(ais) {
-        const container = document.getElementById('ai-container');
-        container.innerHTML = ais.map(ai => {
-            const stars = "★".repeat(Math.round(ai.rating)) + "☆".repeat(5 - Math.round(ai.rating));
-            const priceLabel = ai.price.includes("有料") ? `💰 ${ai.price}` : `💚 ${ai.price}`;
-            
-            return `
-                <div class="ai-card">
-                    <div class="card-top">
-                        <div class="ai-header">
-                            <div class="ai-logo">${ai.logo}</div>
-                            <div class="ai-name-section">
-                                <div class="ai-name">${ai.name}</div>
-                                <div class="ai-company"><span class="flag">${ai.flag}</span> ${ai.company}</div>
-                            </div>
-                        </div>
-                        <div class="card-star-box">${stars}</div>
-                    </div>
-
-                    <div class="meta-info">
-                        <div class="meta-tag">${priceLabel}</div>
-                        ${ai.individual ? '<div class="meta-tag">個人対応</div>' : ''}
-                        ${ai.enterprise ? '<div class="meta-tag">企業対応</div>' : ''}
-                        ${ai.integration && ai.integration.length > 0 ? `<div class="meta-tag">${ai.integration.slice(0, 2).join(', ')}</div>` : ''}
-                    </div>
-
-                    <div class="desc-box">${ai.desc}</div>
-
-                    <div class="btn-group">
-                        <button class="btn btn-detail" onclick="openDetail('${ai.name}', '${ai.company}', \`${ai.fullDetail}\`, '${ai.integration && ai.integration.length > 0 ? `https://www.${ai.name.toLowerCase().replace(/\\s/g, '')}.com` : 'https://example.com'}')">詳細を見る</button>
-                        <button class="btn btn-review" onclick="alert('口コミ機能準備中...')">💬</button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    function openDetail(name, company, detail, url) {
-        document.getElementById('modal-title').textContent = `${name} (${company})`;
-        document.getElementById('modal-detail').textContent = detail;
-        document.getElementById('modal-url').href = url;
-        document.getElementById('detail-modal').classList.add('show');
-    }
-
-    function closeDetailModal() {
-        document.getElementById('detail-modal').classList.remove('show');
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        initCategories();
-        renderCards(aiDatabase);
-        document.getElementById('search-input').addEventListener('input', (e) => {
-            const word = e.target.value.toLowerCase();
-            const filtered = aiDatabase.filter(ai => 
-                ai.name.toLowerCase().includes(word) ||
-                ai.company.toLowerCase().includes(word) ||
-                ai.desc.toLowerCase().includes(word)
-            );
-            renderCards(filtered);
-        });
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('nav-title').addEventListener('click', () => {
+        settingsTaps++;
+        if (settingsTaps >= 5) {
+            settingsTaps = 0;
+            openModal('settings-modal');
+        }
     });
-</script>
+
+    document.getElementById('search-input').addEventListener('input', applyFilter);
+    applyFilter();
+});
+
+function applyFilter() {
+    const word = document.getElementById('search-input').value.toLowerCase();
+    const filtered = masterList.filter(d => d.name.toLowerCase().includes(word) || d.desc.toLowerCase().includes(word));
+    renderCards(filtered);
+}
+
+function renderCards(docs) {
+    const container = document.getElementById('content-area');
+    container.innerHTML = docs.map(d => {
+        const stars = '★'.repeat(d.rating) + '☆'.repeat(5 - d.rating);
+        const icon = d.name.charAt(0).toUpperCase();
+        return `
+            <div class="ai-card">
+                <div class="ai-icon">${icon}</div>
+                <div class="ai-name">${d.name}</div>
+                <div class="ai-company">${d.company}</div>
+                <div class="ai-rating">${stars}</div>
+                <div class="ai-meta">
+                    ${d.web ? '<span class="meta-badge">WEB</span>' : ''}
+                    ${d.app ? '<span class="meta-badge">APP</span>' : ''}
+                </div>
+                <div class="ai-desc">${d.desc}</div>
+                <div class="ai-buttons">
+                    <button class="ai-btn btn-primary" onclick="alert('${d.name}')">公式</button>
+                    <button class="ai-btn btn-outline" onclick="alert('${d.desc}')">詳細</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function switchTab(tab) {
+    if (tab === '選択基準') {
+        document.getElementById('content-area').innerHTML = '<div style="grid-column:1/-1; background:#1e293b; padding:30px; border-radius:12px; font-size:1.1rem;">【初心者】ChatGPT / Claude / Gemini<br>【プロ】コード→Cursor | 画像→Midjourney | 動画→Sora</div>';
+    } else {
+        applyFilter();
+    }
+}
+
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function unlockAdmin() {
+    const pw = document.getElementById('admin-pw').value;
+    if (pw === '55533557') {
+        alert('✅ ロック解除');
+        closeModal('settings-modal');
+    } else {
+        alert('❌ 違います');
+    }
+}
+
+document.getElementById('settings-trigger').addEventListener('click', () => {
+    openModal('settings-modal');
+});
+    </script>
 </body>
 </html>
