@@ -2,10 +2,11 @@
 <html lang="ja">
 <head>
 <!--
+  CLEAN_BUILD: 2026-02-28_2100_noCRLF
 APP: AI Navigator JP
-VERSION: v103.3.5-p3
-BUILD_ID: 2026-02-28_1850_adminimporter-p3p
-DATE(JST): 2026-02-28 18:50
+VERSION: v103.2.8-p3
+BUILD_ID: 2026-02-28_1634_adminimporter-p3i
+DATE(JST): 2026-02-28 16:34
 AUTHOR: ChatGPT_Yui
 TITLE: Integrate ◎(v103 central) + △(v102 side panels) and fix Firestore mapping/collections
 CHANGES:
@@ -20,7 +21,7 @@ POLICY: Central UI Freeze. Side panels are outside of central width.
 
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AI Navigator JP | v103.3.5-p3</title>
+<title>AI Navigator JP | v103.2.8-p3</title>
 
 <style>
 :root {
@@ -253,7 +254,7 @@ header { max-width: 1200px; margin: 0 auto 10px; border-bottom: 2px solid var(--
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <div>
         <h1 id="title-tap-target" style="margin:0;">AI Navigator <span style="color:var(--blue)">JP</span></h1>
-        <div class="hp-version">v103.3.5-p3 - Central UI Freeze / Side panels + Firestore Fix + Admin Importer</div>
+        <div class="hp-version">v103.2.8-p3 - Central UI Freeze / Side panels + Firestore Fix + Admin Importer</div>
       </div>
       <button id="settings-gear" onclick="document.getElementById('user-set').classList.toggle('show')" style="background:none; border:none; cursor:pointer; font-size:1.5rem; color:var(--text);">⚙️</button>
     </div>
@@ -334,7 +335,6 @@ header { max-width: 1200px; margin: 0 auto 10px; border-bottom: 2px solid var(--
         </div>
 
         <div id="import-status" class="small-note" style="margin-top:6px; color:var(--blue);"></div>
-          <div class="muted" id="import-existence-summary" style="margin-top:6px;"></div>
         <pre id="import-log" style="margin-top:8px; background:#0b1220; border:1px solid #1f2937; border-radius:10px; padding:10px; max-height:180px; overflow:auto; font-size:12px;"></pre>
       </div>
     </div>
@@ -653,11 +653,6 @@ function imp_setStatus(msg) {
   const el = document.getElementById("import-status");
   if (el) el.textContent = msg || "";
 }
-function imp_setExistenceSummary(text){
-  const el = document.getElementById("import-existence-summary");
-  if (el) el.textContent = text || "";
-}
-
 function imp_setSaStatus(msg) {
   const el = document.getElementById("import-sa-status");
   if (el) el.textContent = msg || "";
@@ -1036,26 +1031,6 @@ function imp_toFirestoreFields(obj) {
   return fields;
 }
 
-
-async function imp_sdkGetExisting(collection, docIds){
-  // Uses Firebase Web SDK (db) to check existence (matches what you see in Firebase console)
-  if (!window.firebaseReady || !window.db) return null;
-  const existed = [];
-  const errors = [];
-  await Promise.all(docIds.map(async (id) => {
-    try {
-      const snap = await db.collection(collection).doc(id).get();
-      if (snap && snap.exists) existed.push(id);
-    } catch (e) {
-      errors.push({ id, message: (e && e.message) ? e.message : String(e) });
-    }
-  }));
-  if (errors.length) {
-    imp_log("[WARN] SDK存在確認エラー: " + errors.map(x => `${x.id}(${x.message})`).join(" / "));
-  }
-  return existed;
-}
-
 async function imp_batchGetExisting(projectId, collection, token, docIds) {
   const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:batchGet`;
   const body = {
@@ -1099,44 +1074,6 @@ async function imp_batchWrite(projectId, collection, token, items) {
   if (!res.ok) throw new Error("batchWrite失敗: " + ((j.error && j.error.message) ? j.error.message : res.status));
   return j;
 }
-
-async function imp_batchWriteSDK(collection, items, mergeMode=true){
-  if (!window.db || !window.firebase || !window.firebase.firestore) throw new Error("Firestore SDKが初期化されていません");
-  const maxPerBatch = 400;
-  const ids = [];
-  let written = 0;
-  for (let i=0; i<items.length; i+=maxPerBatch){
-    const chunk = items.slice(i, i+maxPerBatch);
-    const batch = window.db.batch();
-    for (const it of chunk){
-      const docId = it && it.id != null && String(it.id).trim() ? String(it.id).trim() : ("auto_" + crypto.randomUUID());
-      ids.push(docId);
-      const ref = window.db.collection(collection).doc(docId);
-      // Firestoreはundefinedを嫌うので除去
-      const clean = imp_stripUndefined(it || {});
-      if (mergeMode) batch.set(ref, clean, { merge: true });
-      else batch.set(ref, clean);
-    }
-    await batch.commit();
-    written += chunk.length;
-  }
-  return { written, ids };
-}
-
-function imp_stripUndefined(obj){
-  if (obj === null) return null;
-  if (Array.isArray(obj)) return obj.map(imp_stripUndefined).filter(v => v !== undefined);
-  if (typeof obj === "object"){
-    const out = {};
-    for (const k of Object.keys(obj)){
-      const v = imp_stripUndefined(obj[k]);
-      if (v !== undefined) out[k] = v;
-    }
-    return out;
-  }
-  return obj;
-}
-
 
 window.toggleImporterPanel = () => {
   const body = document.getElementById("importer-body");
@@ -1219,40 +1156,21 @@ window.imp_exists = async () => {
     const items = imp_parseItems(imp_getText("import-ndjson"));
     const ids = items.map(it => it && it.id != null ? String(it.id).trim() : "").filter(Boolean);
     if (!ids.length) throw new Error("id がありません（存在確認できません）");
-
-    // まずSDKで存在確認（サービス鍵不要）
-    let exists = null;
-    try { exists = await imp_sdkGetExisting(FIRESTORE_COLLECTION_AI_TOOLS, ids); } catch(_) {}
-    if (Array.isArray(exists)) {
-      const exSet = new Set(exists);
-      const missing = ids.filter(id => !exSet.has(id));
-      imp_setStatus(`存在確認: 既に存在=${exists.length} / 新規=${missing.length}`);
-      imp_setExistenceSummary(`存在確認: 既存=${exists.length}（更新） / 新規=${missing.length}（追加）`);
-      if (exists.length) imp_log("[INFO] existing ids: " + exists.join(", "));
-      if (missing.length) imp_log("[INFO] new ids: " + missing.join(", "));
-      return;
-    }
-
-
-    const saRaw = (imp_getText("import-sa-json") || "").trim() || imp_getServiceAccountCache();
+    const saRaw = (imp_getText("import-sa-json").trim() || String(window.__imp_sa_raw || "").trim());
     if (!saRaw) {
+      // open SA editor to avoid confusion
       try { window.imp_unlockSaUI(); } catch(_){}
-      throw new Error("サービスアカウントJSONが空です（「再入力」→貼り付け→『サービス鍵を畳む』）");
+      throw new Error("サービスアカウントJSONが空です（「再入力」→貼り付け→サービス鍵を畳む、でOK）");
     }
-
     const sa = imp_parseServiceAccount(saRaw);
     const cfg = getStoredFirebaseConfig();
     const projectId = (cfg && cfg.projectId) ? cfg.projectId : sa.project_id;
-
     const token = await imp_getAccessToken(sa);
-    const existsRest = await imp_batchGetExisting(projectId, FIRESTORE_COLLECTION_AI_TOOLS, token, ids);
-    exists = existsRest;
-    const exSet = new Set(existsRest);
-
+    const exists = await imp_batchGetExisting(projectId, FIRESTORE_COLLECTION_AI_TOOLS, token, ids);
+    const exSet = new Set(exists);
     const missing = ids.filter(id => !exSet.has(id));
-    imp_setStatus(`存在確認: 既に存在=${exists.length} / 新規=${missing.length}`);
-    if (exists.length) imp_log("[INFO] existing ids: " + exists.join(", "));
-    if (missing.length) imp_log("[INFO] new ids: " + missing.join(", "));
+    imp_setStatus(`既に存在: ${exists.length} / なし: ${missing.length}`);
+    if (missing.length) imp_log("[WARN] missing ids: " + missing.join(", "));
   } catch (e) {
     imp_setStatus("[NG] " + (e && e.message ? e.message : e));
   }
@@ -1260,100 +1178,29 @@ window.imp_exists = async () => {
 };
 
 window.imp_import = async () => {
-  imp_setStatus("投入中…（存在確認→トークン→書き込み→再確認）");
+  imp_setStatus("投入中…（トークン取得→書き込み）");
   try {
     const items = imp_parseItems(imp_getText("import-ndjson"));
     if (!items.length) throw new Error("AIデータが空です");
     if (items.length > 50) throw new Error("一度に50件までにしてください（20件ずつ推奨）");
-
-    const ids = items.map(it => it && it.id != null ? String(it.id).trim() : "").filter(Boolean);
-    if (!ids.length) throw new Error("id がありません（投入できません）");
-
-    
-    // まずSDKで書き込みできるならサービス鍵不要（最短）
-    const cfg = getStoredFirebaseConfig();
-    const projectId_hint = (cfg && cfg.projectId) ? cfg.projectId : null;
-
-    // 事前の存在確認（SDK優先）
-    let existedBefore = null;
-    existedBefore = await imp_sdkGetExisting(FIRESTORE_COLLECTION_AI_TOOLS, ids);
-    if (!Array.isArray(existedBefore)) existedBefore = [];
-    const existedSet = new Set(existedBefore);
-    const willCreate = ids.filter(id => !existedSet.has(id));
-    const willUpdate = ids.filter(id => existedSet.has(id));
-    imp_log(`[INFO] willCreate=${willCreate.length} / willUpdate=${willUpdate.length}`);
-    imp_setExistenceSummary(`存在確認: 既存=${willUpdate.length}（更新） / 新規=${willCreate.length}（追加）`);
-
-    // SDK書き込みを試す（権限NGならサービス鍵方式にフォールバック）
-    try {
-      await imp_batchWriteSDK(FIRESTORE_COLLECTION_AI_TOOLS, items, true);
-      imp_log("[OK] SDK書き込みで投入しました（サービス鍵不要）");
-    } catch (sdkErr) {
-      const msg = (sdkErr && sdkErr.message) ? sdkErr.message : String(sdkErr);
-      imp_log("[WARN] SDK書き込み失敗 → サービス鍵方式へ: " + msg);
-
-      const saRaw = (imp_getText("import-sa-json") || "").trim() || imp_getServiceAccountCache();
-      if (!saRaw) throw new Error("SDK書き込みが権限で失敗しました。サービスアカウントJSONを貼ってから再試行してください。（『再入力』→貼り付け→『サービス鍵を畳む』）");
-      const sa = imp_parseServiceAccount(saRaw);
-
-      const projectId = (cfg && cfg.projectId) ? cfg.projectId : sa.project_id;
-      if (cfg && cfg.projectId && sa.project_id && cfg.projectId !== sa.project_id) {
-        imp_log(`[WARN] projectId mismatch: cfg=${cfg.projectId} / sa=${sa.project_id}`);
-      }
-      const token = await imp_getAccessToken(sa);
-
-      // 書き込み（REST）
-      const resp = await imp_batchWrite(projectId, FIRESTORE_COLLECTION_AI_TOOLS, token, items);
-
-      const statuses = Array.isArray(resp && resp.status) ? resp.status : [];
-      const bad = [];
-      for (let i = 0; i < statuses.length; i++) {
-        const st = statuses[i];
-        const code = st && typeof st.code === "number" ? st.code : 0;
-        if (code && code !== 0) bad.push({ i, code, message: st.message || "unknown" });
-      }
-      if (bad.length) {
-        imp_log("[WARN] batchWrite partial errors: " + bad.map(x => `#${x.i} code=${x.code} ${x.message}`).join(" | "));
-      }
+    const saRaw = (imp_getText("import-sa-json") || "").trim() || imp_getServiceAccountCache();
+    if (!saRaw) throw new Error("サービスアカウントJSONが空です（『サービス鍵を畳む』の下に貼り付け → 自動でこのタブ内に保持されます）");
+    const sa = imp_parseServiceAccount(saRaw);
+const cfg = getStoredFirebaseConfig();
+    const projectId = (cfg && cfg.projectId) ? cfg.projectId : sa.project_id;
+    if (cfg && cfg.projectId && sa.project_id && cfg.projectId !== sa.project_id) {
+      imp_log(`[WARN] projectId mismatch: cfg=${cfg.projectId} / sa=${sa.project_id}`);
     }
-    
-    // 事後の存在確認（本当に反映されたか：SDKで確認）
-    let existedAfter = null;
-    try { existedAfter = await imp_sdkGetExisting(FIRESTORE_COLLECTION_AI_TOOLS, ids); } catch(_) { existedAfter = null; }
-    if (!Array.isArray(existedAfter)) {
-      imp_log("[WARN] 事後確認: SDKで確認できません（ルール/初期化の可能性）");
-      existedAfter = [];
-    }
-    const afterSet = new Set(existedAfter);
-
-
-    const createdOk = willCreate.filter(id => afterSet.has(id));
-    const createdNg = willCreate.filter(id => !afterSet.has(id));
-    const updatedOk = willUpdate.filter(id => afterSet.has(id));
-    const updatedNg = willUpdate.filter(id => !afterSet.has(id));
-
-    const okCount = createdOk.length + updatedOk.length;
-    const ngCount = createdNg.length + updatedNg.length;
-
-    imp_setStatus(`投入結果: 追加=${createdOk.length}/${willCreate.length} 更新=${updatedOk.length}/${willUpdate.length} 失敗=${ngCount}`);
-    if (ngCount===0 && willCreate.length===0 && willUpdate.length>0){
-      imp_log("[INFO] すべて既存IDの更新です（件数は増えません）");
-      imp_setExistenceSummary(`存在確認: 既存=${willUpdate.length}（更新のみ・件数は増えません）`);
-    }
-    if (createdNg.length) imp_log("[NG] create failed ids: " + createdNg.join(", "));
-    if (updatedNg.length) imp_log("[NG] update failed ids: " + updatedNg.join(", "));
-
-    // 誤操作防止：成功した分だけ消す（失敗があるときは残して再投入できるようにする）
-    if (ngCount === 0) {
-      window.imp_clear(true, true);
-    }
-
-    // 画面の再読込（件数表示を更新）
+    const token = await imp_getAccessToken(sa);
+    await imp_batchWrite(projectId, FIRESTORE_COLLECTION_AI_TOOLS, token, items);
+    imp_setStatus(`投入完了: ${items.length}件（成功）`);
+    // 誤操作防止：自動で消して畳む
+    window.imp_clear(true, true);
+    // 画面の再読込
     try {
       const ok = await initFirebaseIfPossible(false);
       if (ok) await refreshAllFromFirestore();
     } catch (_) {}
-
   } catch (e) {
     imp_setStatus("[NG] " + (e && e.message ? e.message : e));
   }
