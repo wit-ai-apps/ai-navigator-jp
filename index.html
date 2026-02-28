@@ -1,255 +1,1841 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Navigator JP v102.0 Final Complete</title>
-    <style>
-        :root { --bg: #0b0f1a; --card: #161e2e; --blue: #38bdf8; --gold: #fbbf24; --text: #f1f5f9; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; }
+<!--
+APP: AI Navigator JP
+VERSION: v103.3.5-p3
+BUILD_ID: 2026-02-28_1850_adminimporter-p3p
+DATE(JST): 2026-02-28 18:50
+AUTHOR: ChatGPT_Yui
+TITLE: Integrate ◎(v103 central) + △(v102 side panels) and fix Firestore mapping/collections
+CHANGES:
+- Keep central card UI/design from ◎ (v103.0.1-p1) as-is (no visual changes to cards/tabs/categories/search).
+- Add left/right side panels UI from △ (v102) as fixed side panels that DO NOT steal central width.
+- Firestore read fix: normalize ai_tools documents (support both old schema and new NDJSON schema).
+- Side panels can read Firestore collections (ai_news / new_ai) with safe fallback to embedded samples.
+- Add hidden Firebase Web config editor (saved to localStorage) so no file editing is needed.
+PARAMS: ?b=2026-02-28_1503_adminimporter-p3b (&debug=1 optional)
+POLICY: Central UI Freeze. Side panels are outside of central width.
+-->
 
-        header { text-align: center; padding: 40px 20px 30px; border-bottom: 2px solid #1e293b; }
-        header h1 { font-size: 2.5rem; margin-bottom: 5px; cursor: pointer; }
-        header h1 span { color: var(--blue); }
-        header .version { color: #64748b; font-size: 0.9rem; margin-bottom: 15px; }
-        header .tagline { font-size: 1.6rem; font-weight: 900; color: var(--blue); margin-bottom: 25px; letter-spacing: 0.03em; }
-        header .settings-icon { position: fixed; top: 20px; right: 20px; font-size: 1.5rem; cursor: pointer; }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Navigator JP | v103.3.5-p3</title>
 
-        .controls { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab-btn { padding: 10px 18px; background: #1e293b; border: none; color: var(--text); cursor: pointer; border-radius: 6px; font-weight: bold; }
-        .tab-btn.active { background: var(--blue); color: #000; }
+<style>
+:root {
+  --bg: #0b0f1a;
+  --card: #161e2e;
+  --blue: #38bdf8;
+  --gold: #fbbf24;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --border: #1e293b;
+  --panelW: 280px;
+  --panelTop: 240px;
+}
 
-        #search-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; font-size: 0.9rem; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
 
-        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; max-width: 1400px; margin: 0 auto; padding: 20px; }
+/* ===== Central UI (from ◎) ===== */
+header { max-width: 1200px; margin: 0 auto 10px; border-bottom: 2px solid var(--border); padding-bottom: 10px; }
+.hp-version { font-size: 0.75rem; color: var(--muted); font-family: monospace; }
+.catch-copy { text-align: center; font-size: 1.8rem; color: var(--blue); font-weight: 900; margin: 15px 0; }
+.tab-container { max-width: 1200px; margin: 0 auto 20px; display: flex; gap: 10px; border-bottom: 2px solid var(--border); padding-bottom: 10px; }
+.tab-btn { padding: 8px 16px; background: #1e293b; border: none; color: var(--text); cursor: pointer; border-radius: 6px; font-weight: bold; }
+.tab-btn.active { background: var(--blue); color: #000; }
+.settings-panel { background:#1e293b; border:1px solid var(--blue); padding:15px; border-radius:12px; margin:0 auto 20px; max-width:1200px; display: none; }
+.settings-panel.show { display: block; }
 
-        .ai-card { background: var(--card); border-radius: 8px; padding: 15px; border: 1px solid #334155; display: flex; flex-direction: column; transition: all 0.3s; }
-        .ai-card:hover { border-color: var(--blue); box-shadow: 0 0 15px rgba(56, 189, 248, 0.2); }
+.category-sidebar { max-width: 1200px; margin: 0 auto 15px; display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 0; border-bottom: 1px solid #334155; }
+.cat-tab { padding: 6px 14px; background: #1e293b; border-radius: 20px; cursor: pointer; white-space: nowrap; font-size: 0.75rem; border: 1px solid #334155; }
+.cat-tab.active { background: var(--blue); color: #000; font-weight: bold; }
 
-        .ai-icon { width: 40px; height: 40px; background: #38bdf8; border-radius: 6px; margin-bottom: 10px; }
-        .ai-name { font-weight: bold; font-size: 0.9rem; margin-bottom: 3px; }
-        .ai-company { font-size: 0.7rem; color: #94a3b8; margin-bottom: 8px; }
-        .ai-rating { color: var(--gold); font-size: 0.75rem; margin-bottom: 10px; }
-        .ai-meta { display: flex; gap: 5px; margin-bottom: 10px; }
-        .meta-badge { background: #1e293b; border: 1px solid #475569; padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; }
-        .ai-desc { font-size: 0.7rem; line-height: 1.4; color: #cbd5e1; flex: 1; margin-bottom: 12px; }
-        .ai-buttons { display: flex; gap: 8px; }
-        .ai-btn { flex: 1; padding: 6px; border-radius: 4px; font-weight: bold; text-align: center; cursor: pointer; font-size: 0.65rem; border: none; text-decoration: none; }
-        .btn-primary { background: var(--blue); color: #000; }
-        .btn-outline { background: transparent; border: 1px solid var(--blue); color: var(--blue); }
+#search-input { width: 100%; max-width: 1200px; margin: 0 auto 20px; display: block; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; }
 
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 999; justify-content: center; align-items: center; }
-        .modal.show { display: flex; }
-        .modal-content { background: var(--card); border: 2px solid var(--blue); border-radius: 12px; padding: 30px; max-width: 500px; }
-        .modal-content h2 { color: var(--blue); margin-bottom: 20px; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-size: 0.9rem; }
-        .form-group input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #334155; background: #0b0f1a; color: white; }
-        .modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
-        .modal-buttons button { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-submit { background: var(--blue); color: #000; }
-        .btn-cancel { background: #334155; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; max-width: 1200px; margin: 0 auto; }
+.ai-card { background: var(--card); border-radius: 12px; padding: 15px; position: relative; border: 1px solid #1e293b; display: flex; flex-direction: column; min-height: 300px; }
+.ai-card.top-rank { border-color: var(--gold); box-shadow: 0 0 10px rgba(251, 191, 36, 0.1); }
+.ai-card.dark-ai { border-color: #ff5252; background: rgba(255,82,82,0.05); }
+.card-star-box { position: absolute; top: 10px; right: 10px; color: var(--gold); font-size: 0.8rem; }
+.tier-badge { position: absolute; top: 30px; right: 10px; background: #334155; color: var(--blue); padding: 2px 6px; border-radius: 3px; font-size: 0.6rem; font-weight: bold; }
+.card-top { display: flex; gap: 10px; align-items: center; margin-bottom: 5px; }
+.ai-icon { width: 32px; height: 32px; background: #fff; border-radius: 4px; padding: 1px; }
+.ai-name { font-weight: bold; font-size: 1.2rem; }
+.ai-ver-hp { font-size: 0.65rem; color: var(--blue); font-weight: bold; }
+.card-company { font-size: 0.8rem; color: #94a3b8; display: flex; align-items: center; gap: 5px; margin-bottom: 10px; }
+.badge { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; margin-right: 4px; }
+.desc-box { height: 2.8em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin: 10px 0; font-size: 0.85rem; }
+.desc-box p { margin: 0; }
+.btn-group { display: flex; gap: 5px; margin-top: auto; }
+.btn { flex: 1; padding: 8px; border-radius: 6px; font-weight: bold; text-align: center; cursor: pointer; text-decoration: none; font-size: 0.75rem; border: none; }
+.btn-primary { background: var(--blue); color: #000; }
+.btn-outline { background: transparent; border: 1px solid var(--blue); color: var(--blue); }
+.expand-detail { display: none; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 8px; border-left: 3px solid var(--blue); margin-bottom: 10px; font-size: 0.75rem; }
+.ai-card.expand .expand-detail { display: block; }
+.btn-login { display: inline-block; background: #334155; color: #fff; padding: 4px 10px; border-radius: 4px; text-decoration: none; font-size: 0.7rem; }
 
-        @media (max-width: 1200px) { .grid { grid-template-columns: repeat(3, 1fr); } }
-        @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
-    </style>
+/* ===== Side panels (from △) ===== */
+.side-panel {
+  width: var(--panelW);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 15px;
+  height: fit-content;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+.side-title {
+  color: var(--blue);
+  font-weight: bold;
+  margin-bottom: 15px;
+  border-bottom: 2px solid var(--blue);
+  padding-bottom: 8px;
+  font-size: 0.9rem;
+}
+.news-item {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+}
+.news-item a {
+  color: var(--text);
+  text-decoration: none;
+  display: block;
+  line-height: 1.4;
+}
+.news-time {
+  font-size: 0.65rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+.new-badge {
+  background: #ff5252;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.55rem;
+  margin-right: 5px;
+  font-weight: bold;
+  display: inline-block;
+}
+
+.side-panel-fixed {
+  position: fixed;
+  top: var(--panelTop);
+  z-index: 50;
+}
+.side-left { left: 20px; }
+.side-right { right: 20px; }
+
+/* side panels appear only when the viewport has enough extra space */
+@media (max-width: 1820px) {
+  .side-panel-fixed { display: none; }
+}
+
+/* ===== Common modal ===== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.75);
+  z-index: 999;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+.modal-overlay.show { display: flex; }
+.modal-content {
+  background: var(--card);
+  border: 2px solid var(--blue);
+  border-radius: 12px;
+  padding: 22px;
+  max-width: 760px;
+  width: 100%;
+  box-shadow: 0 4px 20px rgba(56,189,248,0.15);
+}
+.modal-content h2 {
+  margin: 0 0 12px;
+  color: var(--blue);
+  font-size: 1.05rem;
+}
+.modal-content .meta {
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin-bottom: 10px;
+}
+.modal-content .body {
+  color: var(--text);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  font-size: 0.9rem;
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+.modal-actions .btn {
+  flex: 0 0 auto;
+  min-width: 140px;
+}
+
+/* ===== Dark AI modal (from ◎) ===== */
+.dark-modal-content {
+  background: var(--card);
+  border: 2px solid #ff5252;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 4px 20px rgba(255,82,82,0.3);
+}
+.dark-modal-content h2 { color: #ff5252; margin: 0 0 15px; }
+.dark-modal-content p { color: var(--text); line-height: 1.6; margin: 10px 0; }
+.modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
+.modal-buttons button { flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+.btn-modal-ok { background: #ff5252; color: white; }
+.btn-modal-ok:hover { background: #ff6b6b; }
+.btn-modal-cancel { background: #334155; color: var(--text); }
+.btn-modal-cancel:hover { background: #475569; }
+
+/* ===== Settings: Firebase config editor (hidden panel) ===== */
+.small-note { font-size: 0.75rem; color: #cbd5e1; line-height: 1.6; }
+.cfg-box {
+  margin-top: 10px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 12px;
+}
+.cfg-box textarea {
+  width: 100%;
+  min-height: 110px;
+  background: #0b0f1a;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+}
+.cfg-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.cfg-actions .btn { flex: 0 0 auto; }
+#admin-status { text-align: center; font-size: 0.8rem; color: var(--blue); margin-top: 10px; }
+</style>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
+
 <body>
-    <header>
-        <h1 id="nav-title">AI Navigator <span>JP</span></h1>
-        <div class="version">v102.0 Final Complete - 110選完全版</div>
-        <div class="tagline">息が詰まるほど、圧倒的。</div>
-        <div class="settings-icon" id="settings-trigger">⚙️</div>
-    </header>
+  <!-- Side panels (fixed, do not steal center width) -->
+  <aside class="side-panel side-panel-fixed side-left" id="left-panel">
+    <div class="side-title">🌍 AIニュース</div>
+    <div id="left-panel-list"></div>
+  </aside>
 
-    <div class="controls">
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('厳選版')">厳選版（110件）</button>
-            <button class="tab-btn" onclick="switchTab('全リスト')">全リスト（110件）</button>
-            <button class="tab-btn" onclick="switchTab('選択基準')">選択基準</button>
-        </div>
-        <input type="text" id="search-input" placeholder="110の実=、ここに俺で。">
+  <aside class="side-panel side-panel-fixed side-right" id="right-panel">
+    <div class="side-title">✨ 新着AI</div>
+    <div id="right-panel-list"></div>
+  </aside>
+
+  <header>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <h1 id="title-tap-target" style="margin:0;">AI Navigator <span style="color:var(--blue)">JP</span></h1>
+        <div class="hp-version">v103.3.5-p3 - Central UI Freeze / Side panels + Firestore Fix + Admin Importer</div>
+      </div>
+      <button id="settings-gear" onclick="document.getElementById('user-set').classList.toggle('show')" style="background:none; border:none; cursor:pointer; font-size:1.5rem; color:var(--text);">⚙️</button>
+    </div>
+    <div class="catch-copy">息が詰まるほど、圧倒的。</div>
+  </header>
+
+  <div id="set" class="settings-panel">
+    <div class="small-note">
+      ✅ 中央カラムは固定（カードの見た目・余白・色を変えない）<br>
+      ✅ Firestoreは <b>ai_tools</b> を正本として読みます（toolsは読まない）
     </div>
 
-    <div class="grid" id="content-area"></div>
-
-    <div class="modal" id="settings-modal">
-        <div class="modal-content">
-            <h2>🔐 管理者パスワード</h2>
-            <div class="form-group">
-                <label>パスワード:</label>
-                <input type="password" id="admin-pw">
-            </div>
-            <div class="modal-buttons">
-                <button class="btn-cancel" onclick="closeModal('settings-modal')">キャンセル</button>
-                <button class="btn-submit" onclick="unlockAdmin()">ロック解除</button>
-            </div>
-        </div>
+    <div class="cfg-box">
+      <div class="small-note" style="margin-bottom:6px;">
+        <b>Firebase Web設定（JSON）</b> を貼って「保存」→「接続チェック」<br>
+        例：Firebaseコンソール → ⚙ → プロジェクトの設定 → 全般 → マイアプリ → SDK設定
+      </div>
+      <div id="firebase-config-editor">
+      <textarea id="firebase-config-json" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","appId":"..."}'></textarea>
+      <div class="cfg-actions">
+        <button class="btn btn-primary" onclick="window.saveFirebaseConfig()">保存</button>
+        <button class="btn btn-outline" onclick="window.testFirebaseConnection()">接続チェック</button>
+        <button class="btn btn-outline" onclick="window.clearFirebaseConfig()">消去</button>
+      </div>
     </div>
 
-    <script>
-const masterList = [
-    { name: "ChatGPT", company: "OpenAI", rating: 5, web: true, app: true, desc: "会話しながら文章・資料・コードを整え、Drive等の連携で作業を前に進めやすい万能型" },
-    { name: "Claude 4.5", company: "Anthropic", rating: 5, web: true, app: true, desc: "長文の読み取りと丁寧な推敲が得意。契約文や説明文も落ち着いた言い回しで整えられる" },
-    { name: "Gemini 3", company: "Google", rating: 4, web: true, app: true, desc: "Googleサービス連携と調査に強く、画像や動画生成（Veo等）の入口にもなる助手" },
-    { name: "Mistral 3", company: "Mistral AI", rating: 3, web: false, app: false, desc: "軽量モデルが多くAPI運用向き。Le Chatで要約・調査もでき、開発者の自由度が高い" },
-    { name: "DeepSeek V3", company: "深度求索", rating: 3, web: false, app: false, desc: "高速なAPI型モデル。推論やツール利用が得意で、前処理やコード生成にも使いやすい" },
-    { name: "Perplexity AI", company: "Perplexity", rating: 5, web: true, app: true, desc: "検索結果に引用を付けて答える。調べ物の裏取り、比較、出典リンク追いが短時間でできる" },
-    { name: "Grok", company: "xAI", rating: 3, web: true, app: true, desc: "X投稿とWeb検索を取り込み即答。会話しながら画像・動画生成まで同じ画面で扱える" },
-    { name: "NotebookLM", company: "Google", rating: 4, web: true, app: true, desc: "自分の資料だけを根拠に要約・整理。引用元が追えるので勉強や授業メモ作りにとても安心" },
-    { name: "Microsoft Copilot", company: "Microsoft", rating: 3, web: true, app: true, desc: "Office内で動き、メール・資料・表計算をその場で整える。企業利用の保護も意識" },
-    { name: "Kimi", company: "月之暗面", rating: 3, web: false, app: false, desc: "超長文の読み取りに強く検索も併用。長い資料の理解、議事録作成、要点抽出に特に向く" },
-    { name: "Midjourney v7", company: "Midjourney", rating: 5, web: true, app: false, desc: "質感・構図・雰囲気づくりが上手い画像生成。参照画像で方向性や人物感も揃えやすい" },
-    { name: "FLUX.2", company: "Black Forest Labs", rating: 4, web: true, app: true, desc: "高精細の画像生成と編集に強い。参照画像で同じ人物・物の一貫性を出しやすい" },
-    { name: "Adobe Firefly", company: "Adobe", rating: 4, web: true, app: true, desc: "Adobe連携で画像・動画・音声を制作。商用利用を意識した学習データ方針も特徴" },
-    { name: "Leonardo.AI", company: "Leonardo", rating: 4, web: true, app: true, desc: "画像生成→編集→拡大→動画化まで一つで回せる。素材づくりと反復がとても速くなる" },
-    { name: "Sora 2", company: "OpenAI", rating: 5, web: true, app: true, desc: "文章や画像から短い高品質動画を作れる。動きや場面転換が自然で、発想の試作に向く" },
-    { name: "Veo 3", company: "Google", rating: 5, web: true, app: true, desc: "音声付き動画生成に強い。品質重視と速度重視を選べ、SNS向けの縦動画にも対応が進む" },
-    { name: "Runway Gen-3", company: "Runway", rating: 4, web: true, app: true, desc: "映像の動き・カメラ・変換を細かく指定できる。動画編集の延長で使える制作ツール寄り" },
-    { name: "Pika 2.0", company: "Pika", rating: 3, web: true, app: true, desc: "画像や音に合わせて短尺動画を作るのが得意。表情同期や効果で面白い素材を作りやすい" },
-    { name: "Suno", company: "Suno AI", rating: 5, web: true, app: true, desc: "歌入りの曲を文章から生成。分割（パート出し）や編集で、デモ曲を仕上げる流れが作れる" },
-    { name: "ElevenLabs", company: "ElevenLabs", rating: 5, web: true, app: true, desc: "自然な読み上げと声の複製が得意。多言語ナレーションやキャラ音声づくりにも向く" },
-    { name: "HeyGen", company: "HeyGen", rating: 4, web: true, app: true, desc: "自分の動画を多言語に吹替し、口の動きも同期。研修・営業・説明動画の翻訳に強い" },
-    { name: "Cursor", company: "Anysphere", rating: 5, web: true, app: true, desc: "コード全体を読ませて修正できるIDE。差分を見ながら進められ、迷子になりにくい設計" },
-    { name: "Windsurf", company: "Cognition", rating: 5, web: true, app: true, desc: "エージェントが修正まで進めるIDE。大きめの作業を分解して流れ作業で進めやすい" },
-    { name: "GitHub Copilot", company: "GitHub", rating: 5, web: true, app: true, desc: "IDEとGitHubで補完・修正・提案。課題からPR作成までの導線が短く、チームで使いやすい" },
-    { name: "Devin", company: "Cognition", rating: 4, web: true, app: true, desc: "課題→計画→実装→テスト→PRまで自走する開発エージェント。複数タスクを並行しやすい" },
-    { name: "DeepL Write", company: "DeepL", rating: 5, web: true, app: true, desc: "文章の推敲に特化。不自然さを直しながら、その場で意図を汲んだ改善案が出てくる" },
-    { name: "Gamma", company: "Gamma", rating: 5, web: true, app: true, desc: "プロンプトやアウトラインからスライド資料を瞬時に生成。デザイン知識がなくてもプロ級" },
-    { name: "Jasper", company: "Jasper", rating: 4, web: true, app: true, desc: "ブログ記事から広告文までSEO重視で生成。既存の文章ネタから新しい企画も広げやすい" },
-    { name: "Writesonic", company: "Writesonic", rating: 4, web: true, app: true, desc: "SEO最適化ブログ記事を自動生成。キーワード分析と記事生成が一体。商用ライセンスあり" },
-    { name: "Grammarly", company: "Grammarly", rating: 4, web: true, app: true, desc: "英語ライティングの完全サポート。文法・スタイル・トーン全てをその場でチェック" },
-    { name: "Wolfram Alpha", company: "Wolfram", rating: 5, web: true, app: true, desc: "数学・科学計算の権威。計算ミスなし。物理・化学・統計あらゆる領域に対応" },
-    { name: "Tableau AI", company: "Salesforce", rating: 4, web: true, app: true, desc: "ビジュアルデータ分析。AI駆動インサイト。大規模企業のBI標準。カスタマイズ性高い" },
-    { name: "Power BI AI", company: "Microsoft", rating: 4, web: true, app: true, desc: "MicrosoftのBI統合ツール。Excel延長線。Office 365との統合で導入が簡単" },
-    { name: "DataRobot", company: "DataRobot", rating: 4, web: true, app: true, desc: "自動機械学習。複雑なML開発を自動化。データサイエンティストの工数を大幅削減" },
-    { name: "n8n", company: "n8n", rating: 4, web: true, app: true, desc: "オープンソース自動化。セルフホスト可能。技術者・データ管理重視のチーム向け" },
-    { name: "Zapier", company: "Zapier", rating: 4, web: true, app: true, desc: "6000以上のアプリを横断。ノーコードで自動化を実現。作業時短が一瞬" },
-    { name: "Make", company: "Make", rating: 4, web: true, app: true, desc: "AIワークフロー自動化。RPA実装。ビジュアルフロー設計で直感的" },
-    { name: "Notion AI", company: "Notion", rating: 4, web: true, app: true, desc: "ノート内にAI統合。執筆補助と要約。知的労働者の標準ツールへ進化" },
-    { name: "Google Translate", company: "Google", rating: 5, web: true, app: true, desc: "100言語以上対応。最高精度翻訳。カメラ翻訳やオフライン機能も完備" },
-    { name: "DeepL", company: "DeepL", rating: 5, web: true, app: true, desc: "文脈を理解した自然な翻訳。Google超。ビジネス文書翻訳の標準" },
-    { name: "Khan Academy AI", company: "Khan Academy", rating: 5, web: true, app: true, desc: "個別指導AI。学習進度を最適化。K-12教育の最高峰。親も監視可能" },
-    { name: "Duolingo", company: "Duolingo", rating: 4, web: true, app: true, desc: "言語学習ゲーム化。中毒性高い。100言語以上学習可能。毎日10分で効果" },
-    { name: "Hugging Face", company: "Hugging Face", rating: 5, web: true, app: true, desc: "AIモデルのGitHub。オープンソース中心。研究者の標準プラットフォーム。無料" },
-    { name: "OpenRouter", company: "OpenRouter", rating: 4, web: true, app: true, desc: "複数LLM の統一API。最安値比較。開発者向け。複数モデルを試せる" },
-    { name: "Together AI", company: "Together", rating: 4, web: true, app: true, desc: "クラウドGPU＋LLM API。安価。オープンモデルのAPI実行に最適" },
-    { name: "Character.AI", company: "Character.AI", rating: 4, web: true, app: true, desc: "キャラクターとの会話AI。創作補助に最適。ロールプレイ的な相談も可能" },
-    { name: "Pi", company: "Inflection AI", rating: 4, web: true, app: true, desc: "会話型AI。感情サポートに長ける。瞑想・相談向け。カジュアルなトーン" },
-    { name: "Poe", company: "Quora", rating: 4, web: true, app: true, desc: "複数AI利用可能。ChatGPT・Claude・Geminiを比較検討できる" },
-    { name: "Replika", company: "Luka", rating: 3, web: true, app: true, desc: "AIパーソナルアシスタント。日記・会話・メンタルサポート。個性化が強み" },
-    { name: "IBM Watson", company: "IBM", rating: 4, web: true, app: true, desc: "企業向けAI。自然言語処理。カスタマイズ可能な大規模ソリューション" },
-    { name: "Dialogflow", company: "Google", rating: 4, web: true, app: true, desc: "チャットボット構築プラットフォーム。会話設計が直感的。インテグレーション豊富" },
-    { name: "Rasa", company: "Rasa", rating: 4, web: true, app: true, desc: "オープンソースチャットボット。カスタマイズの自由度が高い。開発者向け" },
-    { name: "Kore.ai", company: "Kore.ai", rating: 4, web: true, app: true, desc: "エンタープライズ向けチャットボット。複数チャネル対応。業界別テンプレ豊富" },
-    { name: "Yellow.ai", company: "Yellow.ai", rating: 4, web: true, app: true, desc: "会話型AIプラットフォーム。ノーコード。顧客サポート自動化に強い" },
-    { name: "LivePerson", company: "LivePerson", rating: 4, web: true, app: true, desc: "カスタマーエクスペリエンスAI。ハイブリッドチャットボット。人とAI の協働" },
-    { name: "Intercom", company: "Intercom", rating: 4, web: true, app: true, desc: "カスタマーコミュニケーションプラットフォーム。AI チャットボット統合。メール・チャット・アプリ横断" },
-    { name: "Zendesk AI", company: "Zendesk", rating: 4, web: true, app: true, desc: "カスタマーサービス自動化。AI による回答提案。SLA管理も一体" },
-    { name: "Freshchat", company: "Freshworks", rating: 4, web: true, app: true, desc: "クラウドチャットソフト。AIボット統合。複数チャネル対応。手頃な価格" },
-    { name: "Drift", company: "Drift", rating: 4, web: true, app: true, desc: "セールスチャットボット。リード獲得から営業支援まで。AI による会話最適化" },
-    { name: "Tidio", company: "Tidio", rating: 4, web: true, app: true, desc: "チャットボット＋ライブチャット。ノーコード設定。AI 提案機能搭載" },
-    { name: "Cognigy", company: "Cognigy", rating: 4, web: true, app: true, desc: "エンタープライズAI チャットボット。マルチ言語対応。複雑な会話フロー対応" },
-    { name: "Synthesia", company: "Synthesia", rating: 4, web: true, app: true, desc: "AI人物動画。150言語対応。企業研修動画制作が簡単に" },
-    { name: "D-ID", company: "D-ID", rating: 4, web: true, app: true, desc: "音声付きAI動画生成。表情・口の動きも自然。マーケティング動画に最適" },
-    { name: "Luma Dream Machine", company: "Luma AI", rating: 4, web: true, app: true, desc: "画像からビデオ生成。自然な動き。SNS短尺動画向け" },
-    { name: "Kapwing", company: "Kapwing", rating: 4, web: true, app: true, desc: "クラウド動画編集。テンプレ豊富。AI カット・キャプション自動生成" },
-    { name: "VEED", company: "VEED", rating: 4, web: true, app: true, desc: "オンライン動画編集。字幕自動生成。複数言語対応。お手軽" },
-    { name: "OpusClip", company: "OpusClip", rating: 4, web: true, app: true, desc: "動画短尺化AI。長い動画から自動的に面白い部分を抽出" },
-    { name: "Loom", company: "Loom", rating: 4, web: true, app: true, desc: "スクリーンキャプチャ＋AI。ビデオメッセージ作成に最適。共有も簡単" },
-    { name: "Stable Diffusion", company: "Stability AI", rating: 4, web: true, app: true, desc: "オープンウェイト画像生成。カスタマイズ自由。研究者・技術者向け" },
-    { name: "Ideogram", company: "Ideogram", rating: 4, web: true, app: true, desc: "テキスト入り画像生成が得意。デザイン・マーケティング素材に最適" },
-    { name: "Picsart", company: "Picsart", rating: 4, web: true, app: true, desc: "AI 画像編集アプリ。背景削除・拡張・スタイル変更。モバイル対応" },
-    { name: "Canva", company: "Canva", rating: 4, web: true, app: true, desc: "デザインプラットフォーム。AI テンプレート生成。素人でもプロ級デザイン" },
-    { name: "Pixlr", company: "Pixlr", rating: 3, web: true, app: true, desc: "オンライン画像編集。AI 背景生成・削除。シンプルで使いやすい" },
-    { name: "Remove.bg", company: "Remove.bg", rating: 4, web: true, app: true, desc: "背景削除に特化。精度高い。API連携も可能。コマース向け" },
-    { name: "Topaz Photo AI", company: "Topaz Labs", rating: 4, web: true, app: true, desc: "写真拡大・修復。超解像度化。ノイズ除去。プロ向け" },
-    { name: "Llama", company: "Meta", rating: 4, web: true, app: true, desc: "オープンウェイト大規模言語モデル。カスタマイズ自由。研究・開発向け" },
-    { name: "Qwen", company: "Alibaba", rating: 4, web: true, app: true, desc: "中国発オープンウェイト。高性能。多言語対応。API制とローカル両対応" },
-    { name: "ERNIE Bot", company: "Baidu", rating: 4, web: true, app: true, desc: "中国大手の大規模言語モデル。中文性能が高い。API提供中" },
-    { name: "Cohere Command", company: "Cohere", rating: 4, web: true, app: true, desc: "テキスト生成API。ビジネスユースに最適。言語モデルの精密制御可能" },
-    { name: "AI21 Jurassic", company: "AI21 Labs", rating: 4, web: true, app: true, desc: "テキスト生成モデル。要約・QA・翻訳に特化。API提供中" },
-    { name: "Aleph Alpha Luminous", company: "Aleph Alpha", rating: 4, web: true, app: true, desc: "ヨーロッパ発の大規模言語モデル。プライバシー重視。マルチモーダル対応" },
-    { name: "Scale AI", company: "Scale AI", rating: 4, web: true, app: true, desc: "AI データラベリング。高精度ソリューション。エンタープライズ向け" },
-    { name: "Weights & Biases", company: "Weights & Biases", rating: 4, web: true, app: true, desc: "ML 実験トラッキング。モデル開発の効率化。リサーチチーム必須" },
-    { name: "Replicate", company: "Replicate", rating: 4, web: true, app: true, desc: "機械学習モデルAPI。セットアップ不要。多彩なモデルから選択可能" },
-    { name: "CivitAI", company: "CivitAI", rating: 3, web: true, app: true, desc: "Stable Diffusionモデルの共有プラットフォーム。コミュニティ豊富。無料" },
-    { name: "Civitai", company: "Civitai", rating: 3, web: true, app: true, desc: "画像生成モデル・LoRA共有。カスタムモデル多数。ユーザー作成が豊富" }
+    <div id="firebase-config-collapsed" style="display:none;">
+      <div class="small-note" style="margin-bottom:6px;">
+        <b>Firebase設定：保存済み</b>（誤貼り付け防止のため畳んでいます）
+        <span id="firebase-config-summary" style="opacity:.85; margin-left:6px;"></span>
+      </div>
+      <div class="cfg-actions">
+        <button class="btn btn-outline" onclick="window.unlockFirebaseConfigUI()">再編集</button>
+        <button class="btn btn-outline" onclick="window.testFirebaseConnection()">接続チェック</button>
+        <button class="btn btn-outline" onclick="window.clearFirebaseConfig()">消去</button>
+      </div>
+    </div>
+
+    <div id="admin-status"></div>
+    </div>
+    <div class="cfg-box" style="margin-top:12px;">
+      <div class="cfg-actions" style="justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+        <div class="small-note" style="margin:0;">
+          <b>管理者：データ投入（ai_tools）</b>（必要な時だけ開く）<br>
+          ・Geminiの出力は <b>NDJSON（1行=1件）</b> で <b>20件ずつ</b><br>
+          ・サービスアカウントJSON（private_key入り）は <b>保存しません</b>（投入後に自動で消せます）
+        </div>
+        <button id="btn-toggle-importer" class="btn btn-outline" onclick="window.toggleImporterPanel()">開く</button>
+      </div>
+
+      <div id="importer-body" style="display:none; margin-top:10px;">
+        <textarea id="import-ndjson" style="height:180px;" placeholder="AIデータ（NDJSON / JSON Lines）をここに貼る（20件ずつ）"></textarea>
+
+        <div id="import-sa-editor">
+        <textarea id="import-sa-json" style="height:120px; margin-top:8px;" placeholder="サービスアカウントJSON（private_key入り）をここに貼る（保存しません）"></textarea>
+        <div id="import-sa-status" class="small-note" style="margin-top:6px; color:var(--blue);"></div>
+        <div class="cfg-actions" style="margin-top:6px;">
+          <button class="btn btn-outline" onclick="window.imp_lockSaUI()">サービス鍵を畳む</button>
+        </div>
+      </div>
+
+      <div id="import-sa-collapsed" style="display:none; margin-top:8px;">
+        <div class="small-note" style="margin:0;">
+          <b id="import-sa-badge">サービスアカウント：未入力</b>（誤貼り付け防止のため畳んでいます）
+          <span id="import-sa-summary" style="opacity:.85; margin-left:6px;"></span>
+        </div>
+        <div class="cfg-actions" style="margin-top:6px;">
+          <button class="btn btn-outline" onclick="window.imp_unlockSaUI()">再入力</button>
+        </div>
+      </div>
+
+        <div class="cfg-actions" style="margin-top:8px; flex-wrap:wrap;">
+          <button class="btn btn-outline" onclick="window.imp_validate()">検証（件数/形式）</button>
+          <button class="btn btn-outline" onclick="window.imp_dupcheck()">重複チェック（貼付内）</button>
+          <button class="btn btn-outline" onclick="window.imp_exists()">存在確認（Firestore）</button>
+          <button class="btn btn-primary" onclick="window.imp_import()">投入（書き込み）</button>
+          <button class="btn btn-outline" onclick="window.imp_clear()">クリア</button>
+        </div>
+
+        <div id="import-status" class="small-note" style="margin-top:6px; color:var(--blue);"></div>
+          <div class="muted" id="import-existence-summary" style="margin-top:6px;"></div>
+        <pre id="import-log" style="margin-top:8px; background:#0b1220; border:1px solid #1f2937; border-radius:10px; padding:10px; max-height:180px; overflow:auto; font-size:12px;"></pre>
+      </div>
+    </div>
+<div class="cfg-box" style="margin-top:12px;">
+      <div class="small-note" style="margin-bottom:6px;">
+        <b>管理者：カード上部の補正（ローカル）</b><br>
+        Firestoreを直さずに、表示だけ直したい時に使います（端末ごとに記憶）。<br>
+        例：<code>{"chatgpt_openai":{"name":"ChatGPT","favicon_domain":"chat.openai.com"}}</code>
+      </div>
+      <textarea id="card-patch-json" style="height:90px;" placeholder='{"chatgpt_openai":{"name":"ChatGPT"}}'></textarea>
+      <div class="cfg-actions">
+        <button class="btn btn-outline" onclick="window.saveCardPatch()">保存</button>
+        <button class="btn btn-outline" onclick="window.clearCardPatch()">消去</button>
+      </div>
+      <div id="card-patch-status" class="small-note" style="margin-top:6px; color:var(--blue);"></div>
+    </div>
+<div id="user-set" class="settings-panel">
+    <div class="small-note">
+      <b>ユーザ設定</b>（ここは右上⚙で開きます）
+    </div>
+
+    <div class="cfg-box">
+      <div class="small-note" style="margin-bottom:6px;">
+        <b>ダークAI（18+）</b><br>
+        表示には同意が必要です。必要な時だけONにしてください。
+      </div>
+      <div class="cfg-actions">
+        <button class="btn btn-outline" onclick="window.showDark18Modal()">⚠️ ダークAIを表示（同意）</button>
+        <button class="btn btn-outline" onclick="window.hideDark18()">非表示に戻す</button>
+        <button class="btn btn-outline" onclick="document.getElementById('user-set').classList.remove('show')">閉じる</button>
+      </div>
+      <div class="small-note" style="margin-top:6px; opacity:.9;">
+        ※ この設定は端末ごとに記憶します。
+      </div>
+    </div>
+  </div>
+</div>
+
+  <div class="tab-container">
+    <button class="tab-btn active" onclick="window.switchTab('厳選版')">厳選版</button>
+    <button class="tab-btn" onclick="window.switchTab('全リスト')">全リスト</button>
+    <button class="tab-btn" onclick="window.switchTab('選択基準')">選択基準</button>
+  </div>
+
+  <div class="category-sidebar" id="category-sidebar">
+    <div class="cat-tab active" onclick="window.applyFilter('すべて')">すべて</div>
+    <div class="cat-tab" onclick="window.applyFilter('チャットAI')">チャットAI</div>
+    <div class="cat-tab" onclick="window.applyFilter('画像生成')">画像生成</div>
+    <div class="cat-tab" onclick="window.applyFilter('動画生成')">動画生成</div>
+    <div class="cat-tab" onclick="window.applyFilter('音声・音楽')">音声・音楽</div>
+    <div class="cat-tab" onclick="window.applyFilter('プログラミング')">プログラミング</div>
+    <div class="cat-tab" onclick="window.applyFilter('文章作成')">文章作成</div>
+    <div class="cat-tab" onclick="window.applyFilter('データ分析')">データ分析</div>
+    <div class="cat-tab" onclick="window.applyFilter('AIエージェント')">AIエージェント</div>
+    <div class="cat-tab" onclick="window.applyFilter('翻訳')">翻訳</div>
+    <div class="cat-tab" onclick="window.applyFilter('教育')">教育</div>
+    <div class="cat-tab" onclick="window.applyFilter('ビジネス')">ビジネス</div>
+    <div class="cat-tab" onclick="window.applyFilter('その他')">その他</div>
+    <div class="cat-tab" onclick="window.applyFilter('ダークAI')" style="color:#ff5252;">ダークAI</div>
+  </div>
+
+  <input type="text" id="search-input" placeholder="検索：AI名・会社・料金・利用形態・タグ・キーワード など">
+
+  <div id="content-area">
+    <div id="ai-container" class="grid"></div>
+  </div>
+
+  <!-- Info modal for News/NewAI -->
+  <div id="info-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h2 id="info-title">詳細</h2>
+      <div class="meta" id="info-meta"></div>
+      <div class="body" id="info-body"></div>
+      <div class="modal-actions">
+        <a id="info-url" class="btn btn-primary" href="#" target="_blank" rel="noopener noreferrer">元URLを開く</a>
+        <button class="btn btn-outline" onclick="window.closeInfoModal()">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dark AI warning modal -->
+  <div id="dark18-modal" class="modal-overlay">
+    <div class="dark-modal-content">
+      <h2>⚠️ 警告：18歳以上向けコンテンツ</h2>
+      <p>このセクションには犯罪・違法目的のAIツール情報が含まれています。</p>
+      <p>これは「世界で何が起きているのか」を理解するための教育・リテラシー資料です。</p>
+      <p style="color: #ff5252; font-weight: bold;">使用・推奨するものではありません。</p>
+      <p>18歳以上で、教育目的で閲覧しますか？</p>
+      <div class="modal-buttons">
+        <button class="btn-modal-cancel" onclick="window.closeDark18Modal()">キャンセル</button>
+        <button class="btn-modal-ok" onclick="window.confirmDark18()">表示する</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+const LS_CFG_KEY = "ai_navi_firebase_config_v1";
+const FIRESTORE_COLLECTION_AI_TOOLS = "ai_tools";
+const FIRESTORE_COLLECTION_NEWS = "ai_news";
+const FIRESTORE_COLLECTION_NEWAI = "new_ai";
+
+let firebaseReady = false;
+let db = null;
+
+const masterListFallback = [
+  { cat:"チャットAI", rank: 1, name:"ChatGPT", company:"OpenAI", flag:"🇺🇸", version:"GPT-5", rating:5, lang:"JP", web:true, app:true, url:"https://chatgpt.com", login_url:"https://chatgpt.com/auth/login", desc:"AIの王者。深度推論で複雑な問題を自動調査。", detail:"Deep Research機能で自動レポート生成。業務効率化の最強兵器。", tier:"S" },
+  { cat:"チャットAI", rank: 2, name:"Claude 4.5", company:"Anthropic", flag:"🇺🇸", version:"Sonnet", rating:5, lang:"JP", web:true, app:true, url:"https://claude.ai", login_url:"https://claude.ai/login", desc:"文章とコードで最高峰。日本語が自然。", detail:"Artifacts機能で即座にアプリ試作。クリエイティブなタスク最強。", tier:"S" },
+  { cat:"チャットAI", rank: 3, name:"Gemini", company:"Google", flag:"🇺🇸", version:"Pro/Flash", rating:5, lang:"JP", web:true, app:true, url:"https://gemini.google.com", login_url:"https://gemini.google.com/app", desc:"Google生態系との連携が圧倒的。", detail:"Gmail・ドライブ・スプレッドシート統合で業務効率化。", tier:"S" },
+  { cat:"データ分析", rank: 6, name:"Perplexity", company:"Perplexity", flag:"🇺🇸", version:"Pro", rating:4, lang:"JP", web:true, app:true, url:"https://www.perplexity.ai", login_url:"https://www.perplexity.ai", desc:"出典付き回答。最新情報をリアルタイム検索。", detail:"検索と裏取りを速くする調査AI。", tier:"A" },
 ];
 
-let settingsTaps = 0;
+let allDocs = [];
+let currentFilter = "すべて";
+let currentTab = "厳選版";
+let showDarkAI = false;
 
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('nav-title').addEventListener('click', () => {
-        settingsTaps++;
-        if (settingsTaps >= 5) {
-            settingsTaps = 0;
-            openModal('settings-modal');
-        }
+const safeStr = (v) => (typeof v === "string" ? v : (v == null ? "" : String(v)));
+
+function parseRating(val, ratingText) {
+  if (typeof val === "number" && isFinite(val)) return Math.max(0, Math.min(5, val));
+  const rt = safeStr(ratingText);
+  const m = rt.match(/([0-9]+(\.[0-9]+)?)/);
+  if (m) return Math.max(0, Math.min(5, parseFloat(m[1])));
+  const m2 = safeStr(val).match(/([0-9]+(\.[0-9]+)?)/);
+  if (m2) return Math.max(0, Math.min(5, parseFloat(m2[1])));
+  return 0;
+}
+
+function inferTier(rating) {
+  if (rating >= 4.9) return "S";
+  if (rating >= 4.2) return "A";
+  if (rating >= 3.6) return "B";
+  if (rating > 0) return "C";
+  return "-";
+}
+
+function japaneseSupportToLang(s) {
+  const t = safeStr(s);
+  if (!t) return "EN";
+  if (t.includes("完全") || t.includes("一部") || t.includes("対応")) return "JP";
+  return "EN";
+}
+
+function inferCategory(item) {
+  const cat = safeStr(item.cat);
+  if (cat) return cat;
+
+  const s = (safeStr(item.search_text) + " " + safeStr(item.short_description) + " " + safeStr(item.desc) + " " + safeStr(item.detail_ja) + " " + safeStr(item.detail) + " " + safeStr(item.provider) + " " + safeStr(item.name) + " " + safeStr(item.category && (item.category.use_case || "")) + " " + safeStr(item.category && (item.category.format || "")) + " " + (Array.isArray(item.tags) ? item.tags.join(" ") : "") + " " + (Array.isArray(item.keyword_tokens) ? item.keyword_tokens.join(" ") : "")).toLowerCase();
+
+  const has = (kw) => s.includes(kw);
+  if (has("dark") || has("犯罪") || has("違法") || has("アダルト") || has("undress") || has("jailbreak")) return "ダークAI";
+  if (has("画像") || has("image") || has("midjourney") || has("dall") || has("firefly") || has("flux")) return "画像生成";
+  if (has("動画") || has("video") || has("runway") || has("sora") || has("veo") || has("pika")) return "動画生成";
+  if (has("音声") || has("music") || has("suno") || has("elevenlabs") || has("voice")) return "音声・音楽";
+  if (has("コード") || has("coding") || has("ide") || has("cursor") || has("copilot") || has("devin") || has("github")) return "プログラミング";
+  if (has("翻訳") || has("translate") || has("deepl")) return "翻訳";
+  if (has("教育") || has("学習") || has("khan")) return "教育";
+  if (has("営業") || has("crm") || has("マーケ") || has("ビジネス") || has("sales")) return "ビジネス";
+  if (has("要約") || has("ライティング") || has("文章") || has("write")) return "文章作成";
+  if (has("検索") || has("調査") || has("analysis") || has("データ") || has("論文") || has("perplexity")) return "データ分析";
+  if (has("agent") || has("エージェント") || has("workflow") || has("zapier") || has("n8n")) return "AIエージェント";
+  return "その他";
+}
+
+function inferWebApp(usageModes) {
+  const arr = Array.isArray(usageModes) ? usageModes.map(safeStr) : [];
+  const s = arr.join(" ").toLowerCase();
+  return {
+    web: s.includes("web"),
+    app: s.includes("モバイル") || s.includes("app") || s.includes("デスクトップ"),
+    api: s.includes("api"),
+  };
+}
+
+function buildFavicon(item) {
+  const domain = safeStr(item.favicon_domain).replace(/^https?:\/\//, "").replace(/^www\./, "").trim();
+  if (domain) return `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(domain)}`;
+  try {
+    const url = safeStr(item.url);
+    if (!url || url === "#") return "";
+    const hostname = new URL(url).hostname.replace("www.", "");
+    return `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(hostname)}`;
+  } catch (e) {
+    return "";
+  }
+}
+
+function normalizeTool(raw, docId) {
+  const item = raw || {};
+  const rating = parseRating(item.rating, item.rating_text);
+  const ua = inferWebApp(item.usage_modes);
+  const cat = inferCategory(item);
+  const dark18 = !!item.dark18 || cat === "ダークAI";
+
+  const desc = safeStr(item.desc || item.short_description || item.description || item.summary || "");
+  const detail = safeStr(item.detail || item.detail_ja || item.long_description || "");
+  const company = safeStr(item.company || item.provider || item.developer || "");
+  const name = safeStr(item.name || item.tool_name || docId || item.id || "Unknown");
+  const url = safeStr(item.url || item.official_url || "");
+  const login_url = safeStr(item.login_url || url || "#");
+  const flag = safeStr(item.flag || "");
+  const version = safeStr(item.version || "");
+  const rank = (typeof item.rank === "number" && isFinite(item.rank)) ? item.rank : null;
+  const lang = safeStr(item.lang || "").toUpperCase() === "JP" ? "JP" : (item.japanese_support ? japaneseSupportToLang(item.japanese_support) : "EN");
+
+  const extraSearch = [
+    safeStr(item.search_text),
+    Array.isArray(item.keyword_tokens) ? item.keyword_tokens.join(" ") : "",
+    Array.isArray(item.tags) ? item.tags.join(" ") : "",
+    Array.isArray(item.external_integration) ? item.external_integration.join(" ") : "",
+    (item.pricing && Array.isArray(item.pricing)) ? item.pricing.map(p => `${safeStr(p.plan)} ${safeStr(p.price)} ${safeStr(p.note)}`).join(" ") : "",
+    Array.isArray(item.usage_modes) ? item.usage_modes.join(" ") : "",
+    safeStr(item.country),
+    safeStr(item.provider),
+    safeStr(item.category && item.category.use_case),
+    safeStr(item.category && item.category.format),
+  ].join(" ").trim();
+
+  return {
+    id: safeStr(item.id || docId || name),
+    cat,
+    rank: rank != null ? rank : 999999,
+    name,
+    company,
+    flag,
+    version,
+    rating: Math.round(rating),
+    rating_raw: rating,
+    lang,
+    web: ("web" in item) ? !!item.web : !!ua.web,
+    app: ("app" in item) ? !!item.app : !!ua.app,
+    url: url || "#",
+    login_url,
+    desc,
+    detail,
+    tier: safeStr(item.tier) || inferTier(rating),
+    dark18,
+    favicon_url: buildFavicon(item) || "",
+    _search: (safeStr(name) + " " + safeStr(company) + " " + safeStr(cat) + " " + safeStr(desc) + " " + safeStr(detail) + " " + extraSearch).toLowerCase(),
+  };
+}
+
+function isFeatured(item) {
+  const tier = safeStr(item.tier).toUpperCase();
+  if (tier === "S" || tier === "A") return true;
+  return (item.rating || 0) >= 4;
+}
+
+function getStoredFirebaseConfig() {
+  try {
+    const raw = localStorage.getItem(LS_CFG_KEY);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (!obj || typeof obj !== "object") return null;
+    return obj;
+  } catch (e) {
+    return null;
+  }
+}
+
+function setStatus(msg) {
+  const el = document.getElementById("admin-status");
+  if (el) el.textContent = msg || "";
+}
+
+
+// ===== Admin safety lock (Firebase Web config) =====
+const LS_CFG_LOCK_KEY = "ai_navi_firebase_cfg_locked_v1";
+
+function applyFirebaseConfigUiState() {
+  const hasCfg = !!localStorage.getItem(LS_CFG_KEY);
+  let lockVal = null;
+  try { lockVal = localStorage.getItem(LS_CFG_LOCK_KEY); } catch(_){}
+  // tri-state:
+  // - "1": locked
+  // - "0": unlocked
+  // - null: default (locked if cfg exists, else unlocked)
+  const locked = (lockVal === "1") || (lockVal == null && hasCfg);
+
+  const editor = document.getElementById("firebase-config-editor");
+  const collapsed = document.getElementById("firebase-config-collapsed");
+  const summary = document.getElementById("firebase-config-summary");
+
+  if (locked) {
+    if (editor) editor.style.display = "none";
+    if (collapsed) collapsed.style.display = "block";
+    const cfg = getStoredFirebaseConfig();
+    if (summary) summary.textContent = cfg && cfg.projectId ? `(projectId=${cfg.projectId})` : "";
+  } else {
+    if (editor) editor.style.display = "block";
+    if (collapsed) collapsed.style.display = "none";
+    if (summary) summary.textContent = "";
+  }
+}
+
+window.lockFirebaseConfigUI = (reason) => {
+  localStorage.setItem(LS_CFG_LOCK_KEY, "1");
+  applyFirebaseConfigUiState();
+  // 誤操作防止：投入パネルも閉じる
+  if (window.imp_clear) window.imp_clear(true);
+};
+
+window.unlockFirebaseConfigUI = () => {
+  localStorage.setItem(LS_CFG_LOCK_KEY, "0");
+  applyFirebaseConfigUiState();
+};
+
+// ===== Admin importer (Service Account -> Firestore REST) =====
+function imp_log(msg) {
+  const el = document.getElementById("import-log");
+  if (!el) return;
+  el.textContent += (msg || "") + "\n";
+  el.scrollTop = el.scrollHeight;
+}
+function imp_setStatus(msg) {
+  const el = document.getElementById("import-status");
+  if (el) el.textContent = msg || "";
+}
+function imp_setExistenceSummary(text){
+  const el = document.getElementById("import-existence-summary");
+  if (el) el.textContent = text || "";
+}
+
+function imp_setSaStatus(msg) {
+  const el = document.getElementById("import-sa-status");
+  if (el) el.textContent = msg || "";
+}
+function imp_getText(id) {
+  const el = document.getElementById(id);
+  return el ? String(el.value || "") : "";
+}
+function imp_setText(id, v) {
+  const el = document.getElementById(id);
+  if (el) el.value = v || "";
+}
+
+function imp_stripFences(s) {
+  s = String(s || "");
+  s = s.replace(/^\s*```[a-zA-Z0-9_-]*\s*\n/, "");
+  s = s.replace(/\n\s*```\s*$/, "");
+  // remove inner ``` lines too
+  s = s.split(/\r?\n/).filter(l => !/^\s*```/.test(l)).join("\n");
+  return s.trim();
+}
+
+function imp_splitTopLevelObjects(raw) {
+  const t = imp_stripFences(normalizeQuotesSimple(raw));
+  const chunks = [];
+  let inStr = false, esc = false;
+  let depth = 0;
+  let start = -1;
+  for (let i = 0; i < t.length; i++) {
+    const ch = t[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === "\\\\") esc = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+    if (ch === '"') { inStr = true; continue; }
+    if (ch === "{") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (ch === "}") {
+      if (depth > 0) depth--;
+      if (depth === 0 && start >= 0) {
+        chunks.push(t.slice(start, i + 1));
+        start = -1;
+      }
+    }
+  }
+  return chunks;
+}
+
+function imp_parseItems(raw) {
+  const cand = imp_stripFences(normalizeQuotesSimple(raw));
+  if (!cand) return [];
+  // 1) JSON array / object
+  try {
+    const o = JSON.parse(cand);
+    if (Array.isArray(o)) return o;
+    if (o && typeof o === "object") return [o];
+  } catch (_) {}
+
+  // 2) NDJSON lines
+  const lines = cand.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (lines.length >= 2 && lines.every(l => l.startsWith("{") && l.endsWith("}"))) {
+    return lines.map(l => JSON.parse(l));
+  }
+
+  // 3) brace split
+  const chunks = imp_splitTopLevelObjects(cand);
+  const items = [];
+  for (const c of chunks) {
+    try {
+      const o = JSON.parse(c);
+      if (o && typeof o === "object" && !Array.isArray(o)) items.push(o);
+    } catch (_) {}
+  }
+  if (items.length) return items;
+
+  throw new Error("AIデータがJSON/NDJSONとして解釈できません。GeminiはNDJSON（1行=1件、JSON以外なし）で出してください。");
+}
+
+function imp_parseServiceAccount(raw) {
+  let s = imp_stripFences(normalizeQuotesSimple(raw));
+  s = stripJsComments(s).trim();
+  if (!s) throw new Error("サービスアカウントJSONが空です");
+  const a = s.indexOf("{");
+  const b = s.lastIndexOf("}");
+  if (a >= 0 && b > a) s = s.slice(a, b + 1);
+  const sa = JSON.parse(s);
+  const need = ["type","project_id","private_key","client_email"];
+  const missing = need.filter(k => !sa[k]);
+  if (missing.length) throw new Error("サービスアカウントJSONの必須キー不足: " + missing.join("/"));
+  if (sa.type !== "service_account") throw new Error("type が service_account ではありません");
+  if (!String(sa.private_key || "").includes("BEGIN PRIVATE KEY")) throw new Error("private_key が見つかりません");
+  return sa;
+}
+
+// ---- Service Account in-memory cache (NOT saved) ----
+// We never store private_key to localStorage. This is session-only (page reload clears).
+window.__imp_sa_raw = "";
+window.__imp_sa_summary = "";
+
+function imp_updateSaStatus() {
+  // Restore cache from sessionStorage if textarea is empty
+  try {
+    const cached = imp_getServiceAccountCache();
+    if (cached && !(imp_getText("import-sa-json") || "").trim()) {
+      // mark as cached (do not reveal private_key)
+      window.__imp_sa_raw = cached;
+      window.__imp_sa_summary = window.__imp_sa_summary || "入力済み（このブラウザ）";
+    }
+  } catch(_){}
+
+  const taRaw = (imp_getText("import-sa-json") || "").trim();
+  const cachedRaw = imp_getServiceAccountCache();
+  const raw = taRaw || cachedRaw;
+
+  if (!raw) {
+    imp_setSaUiLocked(true, "（未入力）");
+    imp_setSaStatus("");
+    return;
+  }
+
+  // If textarea has content, validate and refresh cache
+  if (taRaw) {
+    try {
+      const sa = imp_parseServiceAccount(taRaw);
+      const summary = (sa.client_email ? sa.client_email : "service_account") + " / project_id=" + (sa.project_id || "");
+      imp_setServiceAccountCache(taRaw, summary);
+      // clear textarea after caching to prevent mis-paste accidents
+      imp_setText("import-sa-json", "");
+      imp_setSaUiLocked(true, "入力済み（このブラウザ）");
+      imp_setSaStatus("OK: 入力済み（このブラウザ）");
+      return;
+    } catch (e) {
+      imp_setSaStatus("まだ不完全: " + (e && e.message ? e.message : e));
+      return;
+    }
+  }
+
+  // Cached only
+  imp_setSaUiLocked(true, "入力済み（このブラウザ）");
+  imp_setSaStatus("OK: 入力済み（このブラウザ）");
+}
+
+
+// ---- Service Account UI lock (prevent mis-paste) ----
+const LS_ADMIN_SA_LOCK = "ainavi_admin_sa_lock_v1";
+// Session-only cache for service account (cleared when tab is closed)
+const SS_ADMIN_SA_RAW = "ainavi_admin_sa_raw_session_v1";
+const LS_ADMIN_SA_RAW = "ainavi_admin_sa_raw_local_v1";
+
+function imp_setServiceAccountCache(raw, summary){
+  const v = (raw && String(raw).trim()) ? String(raw) : "";
+  try { window.__imp_sa_raw = v; } catch(_){}
+  try { window.__imp_sa_summary = summary || ""; } catch(_){}
+  // sessionStorage (tab)
+  try {
+    if(v) sessionStorage.setItem(SS_ADMIN_SA_RAW, v);
+    else sessionStorage.removeItem(SS_ADMIN_SA_RAW);
+  } catch(_){}
+  // localStorage (same origin) - keeps until "鍵を忘れる"
+  try {
+    if(v){
+      const b64 = btoa(unescape(encodeURIComponent(v)));
+      localStorage.setItem(LS_ADMIN_SA_RAW, b64);
+    } else {
+      localStorage.removeItem(LS_ADMIN_SA_RAW);
+    }
+  } catch(_){}
+}
+
+function imp_getServiceAccountCache(){
+  try {
+    const w = (window.__imp_sa_raw || "").trim();
+    if(w) return w;
+  } catch(_){}
+  try {
+    const s = (sessionStorage.getItem(SS_ADMIN_SA_RAW) || "").trim();
+    if(s) return s;
+  } catch(_){}
+  try {
+    const b64 = (localStorage.getItem(LS_ADMIN_SA_RAW) || "").trim();
+    if(b64){
+      const raw = decodeURIComponent(escape(atob(b64)));
+      if(raw && raw.trim()) return raw;
+    }
+  } catch(_){}
+  return "";
+}
+
+
+function imp_setSaUiLocked(isLocked, summaryText){
+  try { localStorage.setItem(LS_ADMIN_SA_LOCK, isLocked ? "1" : "0"); } catch(_){}
+  const editor = document.getElementById("import-sa-editor");
+  const collapsed = document.getElementById("import-sa-collapsed");
+  const summary = document.getElementById("import-sa-summary");
+  const badge = document.getElementById("import-sa-badge");
+
+  const hasTa = !!(imp_getText("import-sa-json") || "").trim();
+  const hasCache = !!(imp_getServiceAccountCache() || "").trim();
+  const hasAny = hasTa || hasCache;
+
+  if (badge) badge.textContent = hasAny ? "サービスアカウント：入力済み" : "サービスアカウント：未入力";
+  if (summary && summaryText) summary.textContent = summaryText;
+  if (summary && !summaryText) summary.textContent = "";
+  if (editor) editor.style.display = isLocked ? "none" : "block";
+  if (collapsed) collapsed.style.display = isLocked ? "block" : "none";
+}
+
+function imp_getSaSummarySafe(){
+  const rawTa = imp_getText("import-sa-json").trim();
+  const rawMem = (window.__imp_sa_raw || "").trim();
+  const raw = rawTa || rawMem;
+  if (!raw) return "";
+  try {
+    const sa = imp_parseServiceAccount(raw);
+    return sa.client_email + " / " + sa.project_id;
+  } catch(_){
+    return "（未検証）";
+  }
+}
+
+window.imp_lockSaUI = () => {
+  // Confirm & cache service account safely (no server send; local only)
+  const taRaw = (imp_getText("import-sa-json") || "").trim();
+  const cached = imp_getServiceAccountCache();
+  if (!taRaw && cached) {
+    // already cached; just lock UI
+    imp_setSaUiLocked(true, "入力済み（このブラウザ）");
+    imp_setText("import-sa-json", "");
+    imp_setSaStatus("OK: 入力済み（このブラウザ）");
+    return;
+  }
+  if (!taRaw) {
+    imp_setSaUiLocked(true, "（未入力）");
+    imp_setSaStatus("未入力：貼り付けてから『サービス鍵を畳む』を押してください");
+    return;
+  }
+  try {
+    const sa = imp_parseServiceAccount(taRaw);
+    const summary = (sa.client_email ? sa.client_email : "service_account") + " / project_id=" + (sa.project_id || "");
+    imp_setServiceAccountCache(taRaw, summary);
+    // clear textarea to avoid accidental exposure
+    imp_setText("import-sa-json", "");
+    imp_setSaUiLocked(true, "入力済み（このブラウザ）");
+    imp_setSaStatus("OK: 入力済み（このブラウザ）");
+  } catch (e) {
+    imp_setSaStatus("NG: " + (e && e.message ? e.message : e));
+    // keep editor open for correction
+    imp_setSaUiLocked(false, "");
+  }
+};
+
+window.imp_unlockSaUI = () => {
+  // show editor for re-paste; keep existing cache until user confirms with "サービス鍵を畳む"
+  imp_setSaUiLocked(false, "");
+  imp_setSaStatus("再入力中：貼り付けたら『サービス鍵を畳む』で確定します。");
+  try {
+    const el = document.getElementById("import-sa-json");
+    if (el) { el.focus(); }
+  } catch(_){}
+};
+
+function applyImporterSaUiState(){
+  let lock = "1";
+  try { lock = localStorage.getItem(LS_ADMIN_SA_LOCK) || "1"; } catch(_){ lock = "1"; }
+  const cached = (imp_getServiceAccountCache() || "").trim();
+  const ta = (imp_getText("import-sa-json") || "").trim();
+  const hasAny = !!cached || !!ta;
+
+  // If nothing is stored yet, show the editor (so the paste box is visible)
+  if (!hasAny) {
+    imp_setSaUiLocked(false, "");
+    imp_setSaStatus("未入力：ここに貼り付け → 『サービス鍵を畳む』で確定します。");
+    return;
+  }
+
+  // If something exists, default to locked unless user explicitly unlocked
+  if (lock !== "0") lock = "1";
+  imp_setSaUiLocked(lock === "1", "入力済み（このブラウザ）");
+  if (lock === "1") imp_setSaStatus("OK: 入力済み（このブラウザ）");
+}
+// ---- /Service Account UI lock ----
+
+function imp_findDuplicateIds(items) {
+  const seen = new Set();
+  const dups = new Set();
+  for (const it of items) {
+    const id = it && it.id != null ? String(it.id).trim() : "";
+    if (!id) continue;
+    if (seen.has(id)) dups.add(id);
+    else seen.add(id);
+  }
+  return Array.from(dups);
+}
+
+// ---- JWT + OAuth token (RS256) ----
+function imp_base64url(buf) {
+  const bytes = new Uint8Array(buf);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+function imp_base64urlStr(s) {
+  const enc = new TextEncoder().encode(s);
+  return imp_base64url(enc);
+}
+function imp_pemToArrayBuffer(pem) {
+  const b64 = pem
+    .replace(/-----BEGIN [^-]+-----/g, "")
+    .replace(/-----END [^-]+-----/g, "")
+    .replace(/\s+/g, "");
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes.buffer;
+}
+async function imp_signJwtRS256(privateKeyPem, headerObj, payloadObj) {
+  const header = imp_base64urlStr(JSON.stringify(headerObj));
+  const payload = imp_base64urlStr(JSON.stringify(payloadObj));
+  const data = new TextEncoder().encode(header + "." + payload);
+  const keyBuf = imp_pemToArrayBuffer(privateKeyPem);
+  const key = await crypto.subtle.importKey(
+    "pkcs8",
+    keyBuf,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sig = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, data);
+  return header + "." + payload + "." + imp_base64url(sig);
+}
+async function imp_getAccessToken(sa, scope = "https://www.googleapis.com/auth/datastore") {
+  const iat = Math.floor(Date.now() / 1000);
+  const exp = iat + 3600;
+  const header = { alg: "RS256", typ: "JWT" };
+  const payload = { iss: sa.client_email, scope, aud: "https://oauth2.googleapis.com/token", iat, exp };
+  const jwt = await imp_signJwtRS256(sa.private_key, header, payload);
+
+  const body = new URLSearchParams();
+  body.set("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer");
+  body.set("assertion", jwt);
+
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body
+  });
+  const j = await res.json();
+  if (!res.ok) throw new Error("token取得失敗: " + (j.error_description || j.error || res.status));
+  return j.access_token;
+}
+
+// ---- Firestore REST ----
+function imp_toFirestoreValue(v) {
+  if (v === null) return { nullValue: null };
+  const t = typeof v;
+  if (t === "string") return { stringValue: v };
+  if (t === "boolean") return { booleanValue: v };
+  if (t === "number") return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+  if (Array.isArray(v)) return { arrayValue: { values: v.map(imp_toFirestoreValue) } };
+  if (t === "object") {
+    const fields = {};
+    for (const k of Object.keys(v)) fields[k] = imp_toFirestoreValue(v[k]);
+    return { mapValue: { fields } };
+  }
+  return { stringValue: String(v) };
+}
+function imp_toFirestoreFields(obj) {
+  const fields = {};
+  for (const k of Object.keys(obj)) {
+    if (k === "id") continue;
+    fields[k] = imp_toFirestoreValue(obj[k]);
+  }
+  return fields;
+}
+
+
+async function imp_sdkGetExisting(collection, docIds){
+  // Uses Firebase Web SDK (db) to check existence (matches what you see in Firebase console)
+  if (!window.firebaseReady || !window.db) return null;
+  const existed = [];
+  const errors = [];
+  await Promise.all(docIds.map(async (id) => {
+    try {
+      const snap = await db.collection(collection).doc(id).get();
+      if (snap && snap.exists) existed.push(id);
+    } catch (e) {
+      errors.push({ id, message: (e && e.message) ? e.message : String(e) });
+    }
+  }));
+  if (errors.length) {
+    imp_log("[WARN] SDK存在確認エラー: " + errors.map(x => `${x.id}(${x.message})`).join(" / "));
+  }
+  return existed;
+}
+
+async function imp_batchGetExisting(projectId, collection, token, docIds) {
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:batchGet`;
+  const body = {
+    documents: docIds.map(id => `projects/${projectId}/databases/(default)/documents/${collection}/${id}`)
+  };
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const j = await res.json().catch(() => null);
+    throw new Error("batchGet失敗: " + (j && j.error && j.error.message ? j.error.message : res.status));
+  }
+  const txt = await res.text();
+  const lines = txt.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const exists = [];
+  for (const ln of lines) {
+    try {
+      const obj = JSON.parse(ln);
+      if (obj && obj.found && obj.found.name) exists.push(obj.found.name.split("/").pop());
+    } catch (_) {}
+  }
+  return exists;
+}
+
+async function imp_batchWrite(projectId, collection, token, items) {
+  const writes = items.map(it => {
+    const docId = it && it.id != null && String(it.id).trim() ? String(it.id).trim() : ("auto_" + crypto.randomUUID());
+    const name = `projects/${projectId}/databases/(default)/documents/${collection}/${docId}`;
+    const fields = imp_toFirestoreFields(it || {});
+    return { update: { name, fields } };
+  });
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:batchWrite`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+    body: JSON.stringify({ writes })
+  });
+  const j = await res.json();
+  if (!res.ok) throw new Error("batchWrite失敗: " + ((j.error && j.error.message) ? j.error.message : res.status));
+  return j;
+}
+
+async function imp_batchWriteSDK(collection, items, mergeMode=true){
+  if (!window.db || !window.firebase || !window.firebase.firestore) throw new Error("Firestore SDKが初期化されていません");
+  const maxPerBatch = 400;
+  const ids = [];
+  let written = 0;
+  for (let i=0; i<items.length; i+=maxPerBatch){
+    const chunk = items.slice(i, i+maxPerBatch);
+    const batch = window.db.batch();
+    for (const it of chunk){
+      const docId = it && it.id != null && String(it.id).trim() ? String(it.id).trim() : ("auto_" + crypto.randomUUID());
+      ids.push(docId);
+      const ref = window.db.collection(collection).doc(docId);
+      // Firestoreはundefinedを嫌うので除去
+      const clean = imp_stripUndefined(it || {});
+      if (mergeMode) batch.set(ref, clean, { merge: true });
+      else batch.set(ref, clean);
+    }
+    await batch.commit();
+    written += chunk.length;
+  }
+  return { written, ids };
+}
+
+function imp_stripUndefined(obj){
+  if (obj === null) return null;
+  if (Array.isArray(obj)) return obj.map(imp_stripUndefined).filter(v => v !== undefined);
+  if (typeof obj === "object"){
+    const out = {};
+    for (const k of Object.keys(obj)){
+      const v = imp_stripUndefined(obj[k]);
+      if (v !== undefined) out[k] = v;
+    }
+    return out;
+  }
+  return obj;
+}
+
+
+window.toggleImporterPanel = () => {
+  const body = document.getElementById("importer-body");
+  const btn = document.getElementById("btn-toggle-importer");
+  if (!body || !btn) return;
+  const open = body.style.display !== "none";
+  if (open) {
+    window.imp_clear(true);
+  } else {
+    body.style.display = "block";
+    btn.textContent = "閉じる";
+    imp_setStatus("");
+    imp_log("== importer opened ==");
+    applyImporterSaUiState();
+  try { imp_updateSaStatus(); } catch(_){ }
+    // force locked view unless user explicitly unlocked
+    try { if (localStorage.getItem(LS_ADMIN_SA_LOCK) !== '0') imp_setSaUiLocked(true, document.getElementById('import-sa-summary')?.textContent || '（誤貼り付け防止）'); } catch(_){ }
+
+    // show quick status only if editor is visible
+    const editor = document.getElementById("import-sa-editor");
+    if (editor && editor.style.display !== "none") imp_updateSaStatus();
+  }
+};
+
+window.imp_clear = (keepClosed, keepServiceAccount) => {
+  imp_setText("import-ndjson", "");
+  if (!keepServiceAccount) {
+    imp_setText("import-sa-json", "");
+    imp_setServiceAccountCache("", "");
+  } else {
+    // keep cache only; textarea stays empty for safety
+    imp_setText("import-sa-json", "");
+  }
+  imp_setStatus("");
+  imp_setSaStatus("");
+  // lock SA UI by default (prevent mis-paste)
+  const summary = keepServiceAccount ? "入力済み（このブラウザ）" : "（未入力）";
+  imp_setSaUiLocked(true, summary);
+  try { localStorage.setItem(LS_ADMIN_SA_LOCK, "1"); } catch(_){}
+  const logEl = document.getElementById("import-log");
+  if (logEl) logEl.textContent = "";
+  if (keepClosed) {
+    const body = document.getElementById("importer-body");
+    const btn = document.getElementById("btn-toggle-importer");
+    if (body) body.style.display = "none";
+    if (btn) btn.textContent = "開く";
+  }
+};
+
+window.imp_validate = () => {
+  imp_setStatus("");
+  const raw = imp_getText("import-ndjson");
+  try {
+    const items = imp_parseItems(raw);
+    const dups = imp_findDuplicateIds(items);
+    imp_setStatus(`OK: 件数=${items.length}` + (dups.length ? ` / 重複ID=${dups.join(",")}` : ""));
+    imp_log("[OK] parsed items: " + items.length);
+    if (dups.length) imp_log("[WARN] duplicate ids: " + dups.join(", "));
+  } catch (e) {
+    imp_setStatus("[NG] " + (e && e.message ? e.message : e));
+    imp_log("[NG] " + (e && e.message ? e.message : e));
+  }
+  imp_updateSaStatus();
+};
+
+window.imp_dupcheck = () => {
+  imp_setStatus("");
+  try {
+    const items = imp_parseItems(imp_getText("import-ndjson"));
+    const dups = imp_findDuplicateIds(items);
+    imp_setStatus(dups.length ? ("重複ID: " + dups.join(", ")) : "重複ID: なし");
+  } catch (e) {
+    imp_setStatus("[NG] " + (e && e.message ? e.message : e));
+  }
+};
+
+window.imp_exists = async () => {
+  imp_setStatus("存在確認中…");
+  try {
+    const items = imp_parseItems(imp_getText("import-ndjson"));
+    const ids = items.map(it => it && it.id != null ? String(it.id).trim() : "").filter(Boolean);
+    if (!ids.length) throw new Error("id がありません（存在確認できません）");
+
+    // まずSDKで存在確認（サービス鍵不要）
+    let exists = null;
+    try { exists = await imp_sdkGetExisting(FIRESTORE_COLLECTION_AI_TOOLS, ids); } catch(_) {}
+    if (Array.isArray(exists)) {
+      const exSet = new Set(exists);
+      const missing = ids.filter(id => !exSet.has(id));
+      imp_setStatus(`存在確認: 既に存在=${exists.length} / 新規=${missing.length}`);
+      imp_setExistenceSummary(`存在確認: 既存=${exists.length}（更新） / 新規=${missing.length}（追加）`);
+      if (exists.length) imp_log("[INFO] existing ids: " + exists.join(", "));
+      if (missing.length) imp_log("[INFO] new ids: " + missing.join(", "));
+      return;
+    }
+
+
+    const saRaw = (imp_getText("import-sa-json") || "").trim() || imp_getServiceAccountCache();
+    if (!saRaw) {
+      try { window.imp_unlockSaUI(); } catch(_){}
+      throw new Error("サービスアカウントJSONが空です（「再入力」→貼り付け→『サービス鍵を畳む』）");
+    }
+
+    const sa = imp_parseServiceAccount(saRaw);
+    const cfg = getStoredFirebaseConfig();
+    const projectId = (cfg && cfg.projectId) ? cfg.projectId : sa.project_id;
+
+    const token = await imp_getAccessToken(sa);
+    const existsRest = await imp_batchGetExisting(projectId, FIRESTORE_COLLECTION_AI_TOOLS, token, ids);
+    exists = existsRest;
+    const exSet = new Set(existsRest);
+
+    const missing = ids.filter(id => !exSet.has(id));
+    imp_setStatus(`存在確認: 既に存在=${exists.length} / 新規=${missing.length}`);
+    if (exists.length) imp_log("[INFO] existing ids: " + exists.join(", "));
+    if (missing.length) imp_log("[INFO] new ids: " + missing.join(", "));
+  } catch (e) {
+    imp_setStatus("[NG] " + (e && e.message ? e.message : e));
+  }
+  imp_updateSaStatus();
+};
+
+window.imp_import = async () => {
+  imp_setStatus("投入中…（存在確認→トークン→書き込み→再確認）");
+  try {
+    const items = imp_parseItems(imp_getText("import-ndjson"));
+    if (!items.length) throw new Error("AIデータが空です");
+    if (items.length > 50) throw new Error("一度に50件までにしてください（20件ずつ推奨）");
+
+    const ids = items.map(it => it && it.id != null ? String(it.id).trim() : "").filter(Boolean);
+    if (!ids.length) throw new Error("id がありません（投入できません）");
+
+    
+    // まずSDKで書き込みできるならサービス鍵不要（最短）
+    const cfg = getStoredFirebaseConfig();
+    const projectId_hint = (cfg && cfg.projectId) ? cfg.projectId : null;
+
+    // 事前の存在確認（SDK優先）
+    let existedBefore = null;
+    existedBefore = await imp_sdkGetExisting(FIRESTORE_COLLECTION_AI_TOOLS, ids);
+    if (!Array.isArray(existedBefore)) existedBefore = [];
+    const existedSet = new Set(existedBefore);
+    const willCreate = ids.filter(id => !existedSet.has(id));
+    const willUpdate = ids.filter(id => existedSet.has(id));
+    imp_log(`[INFO] willCreate=${willCreate.length} / willUpdate=${willUpdate.length}`);
+    imp_setExistenceSummary(`存在確認: 既存=${willUpdate.length}（更新） / 新規=${willCreate.length}（追加）`);
+
+    // SDK書き込みを試す（権限NGならサービス鍵方式にフォールバック）
+    try {
+      await imp_batchWriteSDK(FIRESTORE_COLLECTION_AI_TOOLS, items, true);
+      imp_log("[OK] SDK書き込みで投入しました（サービス鍵不要）");
+    } catch (sdkErr) {
+      const msg = (sdkErr && sdkErr.message) ? sdkErr.message : String(sdkErr);
+      imp_log("[WARN] SDK書き込み失敗 → サービス鍵方式へ: " + msg);
+
+      const saRaw = (imp_getText("import-sa-json") || "").trim() || imp_getServiceAccountCache();
+      if (!saRaw) throw new Error("SDK書き込みが権限で失敗しました。サービスアカウントJSONを貼ってから再試行してください。（『再入力』→貼り付け→『サービス鍵を畳む』）");
+      const sa = imp_parseServiceAccount(saRaw);
+
+      const projectId = (cfg && cfg.projectId) ? cfg.projectId : sa.project_id;
+      if (cfg && cfg.projectId && sa.project_id && cfg.projectId !== sa.project_id) {
+        imp_log(`[WARN] projectId mismatch: cfg=${cfg.projectId} / sa=${sa.project_id}`);
+      }
+      const token = await imp_getAccessToken(sa);
+
+      // 書き込み（REST）
+      const resp = await imp_batchWrite(projectId, FIRESTORE_COLLECTION_AI_TOOLS, token, items);
+
+      const statuses = Array.isArray(resp && resp.status) ? resp.status : [];
+      const bad = [];
+      for (let i = 0; i < statuses.length; i++) {
+        const st = statuses[i];
+        const code = st && typeof st.code === "number" ? st.code : 0;
+        if (code && code !== 0) bad.push({ i, code, message: st.message || "unknown" });
+      }
+      if (bad.length) {
+        imp_log("[WARN] batchWrite partial errors: " + bad.map(x => `#${x.i} code=${x.code} ${x.message}`).join(" | "));
+      }
+    }
+    
+    // 事後の存在確認（本当に反映されたか：SDKで確認）
+    let existedAfter = null;
+    try { existedAfter = await imp_sdkGetExisting(FIRESTORE_COLLECTION_AI_TOOLS, ids); } catch(_) { existedAfter = null; }
+    if (!Array.isArray(existedAfter)) {
+      imp_log("[WARN] 事後確認: SDKで確認できません（ルール/初期化の可能性）");
+      existedAfter = [];
+    }
+    const afterSet = new Set(existedAfter);
+
+
+    const createdOk = willCreate.filter(id => afterSet.has(id));
+    const createdNg = willCreate.filter(id => !afterSet.has(id));
+    const updatedOk = willUpdate.filter(id => afterSet.has(id));
+    const updatedNg = willUpdate.filter(id => !afterSet.has(id));
+
+    const okCount = createdOk.length + updatedOk.length;
+    const ngCount = createdNg.length + updatedNg.length;
+
+    imp_setStatus(`投入結果: 追加=${createdOk.length}/${willCreate.length} 更新=${updatedOk.length}/${willUpdate.length} 失敗=${ngCount}`);
+    if (ngCount===0 && willCreate.length===0 && willUpdate.length>0){
+      imp_log("[INFO] すべて既存IDの更新です（件数は増えません）");
+      imp_setExistenceSummary(`存在確認: 既存=${willUpdate.length}（更新のみ・件数は増えません）`);
+    }
+    if (createdNg.length) imp_log("[NG] create failed ids: " + createdNg.join(", "));
+    if (updatedNg.length) imp_log("[NG] update failed ids: " + updatedNg.join(", "));
+
+    // 誤操作防止：成功した分だけ消す（失敗があるときは残して再投入できるようにする）
+    if (ngCount === 0) {
+      window.imp_clear(true, true);
+    }
+
+    // 画面の再読込（件数表示を更新）
+    try {
+      const ok = await initFirebaseIfPossible(false);
+      if (ok) await refreshAllFromFirestore();
+    } catch (_) {}
+
+  } catch (e) {
+    imp_setStatus("[NG] " + (e && e.message ? e.message : e));
+  }
+  imp_updateSaStatus();
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+  // Apply lock state on load
+  applyFirebaseConfigUiState();
+  applyImporterSaUiState();
+    // force locked view unless user explicitly unlocked
+    try { if (localStorage.getItem(LS_ADMIN_SA_LOCK) !== '0') imp_setSaUiLocked(true, document.getElementById('import-sa-summary')?.textContent || '（誤貼り付け防止）'); } catch(_){ }
+
+  // Service account input reaction (only when editor is visible)
+  const saTa = document.getElementById("import-sa-json");
+  if (saTa) saTa.addEventListener("input", () => imp_updateSaStatus());
+
+  // Prevent pasting service account/private_key into the card patch box (common mistake)
+  const cp = document.getElementById("card-patch-json");
+  const cpStatus = document.getElementById("card-patch-status");
+  if (cp) {
+    cp.addEventListener("input", () => {
+      const v = (cp.value || "");
+      if (/BEGIN\s+PRIVATE\s+KEY|\"private_key\"/i.test(v)) {
+        cp.value = "";
+        if (cpStatus) cpStatus.textContent = "NG: ここは『カード上部の補正』です。サービスアカウントJSON（private_key入り）は『データ投入』→『再入力』へ貼ってください（安全のため自動で消しました）。";
+      } else {
+        if (cpStatus) cpStatus.textContent = "";
+      }
     });
+  }
 
-    document.getElementById('search-input').addEventListener('input', applyFilter);
-    applyFilter();
 });
+function normalizeQuotesSimple(s){
+  return (s||"")
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/\u00A0/g, " ");
+}
+function stripJsComments(s){
+  // remove /* ... */ and // ... comments (best-effort)
+  s = s.replace(/\/\*[\s\S]*?\*\//g, "");
+  s = s.replace(/^\s*\/\/.*$/gm, "");
+  return s;
+}
+function extractObjectLiteral(raw){
+  const s = raw;
+  const a = s.indexOf("{");
+  const b = s.lastIndexOf("}");
+  if(a >= 0 && b > a) return s.slice(a, b+1);
+  return s;
+}
+function quoteUnquotedKeys(objText){
+  // quote keys like apiKey: -> "apiKey":
+  return objText.replace(/([,{]\s*)([A-Za-z0-9_$]+)\s*:/g, '$1"$2":');
+}
+function removeTrailingCommas(objText){
+  return objText.replace(/,\s*([}\]])/g, "$1");
+}
+function parseFirebaseConfigFlexible(raw){
+  if(!raw) throw new Error("empty");
+  let s = normalizeQuotesSimple(String(raw).trim());
+  s = stripJsComments(s).trim();
 
-function applyFilter() {
-    const word = document.getElementById('search-input').value.toLowerCase();
-    const filtered = masterList.filter(d => d.name.toLowerCase().includes(word) || d.desc.toLowerCase().includes(word));
-    renderCards(filtered);
+  // If they pasted a JS snippet, try to cut to object literal area.
+  s = extractObjectLiteral(s).trim();
+
+  // ✅ If user pasted only the inside lines (no { } / no const), wrap as object body.
+  const hasBraceOrArray = (s.indexOf("{") >= 0) || (s.indexOf("[") >= 0);
+  if(!hasBraceOrArray){
+    s = "{" + s + "}";
+  }
+
+  // Remove leading stuff like "const firebaseConfig =" only when needed.
+  s = s.trim();
+  if(!(s.startsWith("{") || s.startsWith("["))){
+    const a = s.indexOf("{");
+    const b = s.indexOf("[");
+    const start = (a >= 0 && b >= 0) ? Math.min(a,b) : Math.max(a,b);
+    if(start > 0) s = s.slice(start);
+  }
+
+  // Remove trailing semicolon etc.
+  s = s.replace(/;+\s*$/g, "").trim();
+
+  // First try strict JSON
+  try {
+    const o = JSON.parse(removeTrailingCommas(s));
+    return o;
+  } catch(e){ /* fallthrough */ }
+
+  // Try to convert JS object literal to JSON
+  const asJson = removeTrailingCommas(quoteUnquotedKeys(s));
+  return JSON.parse(asJson);
 }
 
-function renderCards(docs) {
-    const container = document.getElementById('content-area');
-    container.innerHTML = docs.map(d => {
-        const stars = '★'.repeat(d.rating) + '☆'.repeat(5 - d.rating);
-        const icon = d.name.charAt(0).toUpperCase();
-        return `
-            <div class="ai-card">
-                <div class="ai-icon">${icon}</div>
-                <div class="ai-name">${d.name}</div>
-                <div class="ai-company">${d.company}</div>
-                <div class="ai-rating">${stars}</div>
-                <div class="ai-meta">
-                    ${d.web ? '<span class="meta-badge">WEB</span>' : ''}
-                    ${d.app ? '<span class="meta-badge">APP</span>' : ''}
-                </div>
-                <div class="ai-desc">${d.desc}</div>
-                <div class="ai-buttons">
-                    <button class="ai-btn btn-primary" onclick="alert('${d.name}')">公式</button>
-                    <button class="ai-btn btn-outline" onclick="alert('${d.desc}')">詳細</button>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
+window.saveFirebaseConfig = () => {
+  const ta = document.getElementById("firebase-config-json");
+  const raw = ta ? ta.value : "";
+  if (!raw || !raw.trim()) {
+    setStatus("Firebase設定が空です。");
+    return;
+  }
+  try {
+    const obj = parseFirebaseConfigFlexible(raw);
 
-function switchTab(tab) {
-    if (tab === '選択基準') {
-        document.getElementById('content-area').innerHTML = '<div style="grid-column:1/-1; background:#1e293b; padding:30px; border-radius:12px; font-size:1.1rem;">【初心者】ChatGPT / Claude / Gemini<br>【プロ】コード→Cursor | 画像→Midjourney | 動画→Sora</div>';
-    } else {
-        applyFilter();
+    // minimal required keys
+    const need = ["apiKey","authDomain","projectId","appId"];
+    const missing = need.filter(k => !obj || !obj[k]);
+    if (missing.length) {
+      setStatus("必須キー不足：" + missing.join("/") + "（Firebaseコンソールの設定全体を貼ってください）");
+      return;
     }
-}
 
-function openModal(id) { document.getElementById(id).classList.add('show'); }
-function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+    // normalize to JSON string
+    localStorage.setItem(LS_CFG_KEY, JSON.stringify(obj));
+    localStorage.setItem(LS_CFG_LOCK_KEY, "1");
+    setStatus("保存しました（OK）。次に「接続チェック」を押してください。");
+    if (window.lockFirebaseConfigUI) window.lockFirebaseConfigUI("saved");
+  } catch (e) {
+    setStatus("貼り付けが途中か、形式が混ざっています。\nFirebaseコンソールの赤い枠から『const firebaseConfig = { ... };』を先頭から末尾まで丸ごと貼ってください。（apiKey必須）\nエラー: " + (e && e.message ? e.message : e));
+  }
+};
 
-function unlockAdmin() {
-    const pw = document.getElementById('admin-pw').value;
-    if (pw === '55533557') {
-        alert('✅ ロック解除');
-        closeModal('settings-modal');
-    } else {
-        alert('❌ 違います');
+window.clearFirebaseConfig = () => {
+  localStorage.removeItem(LS_CFG_KEY);
+  localStorage.removeItem(LS_CFG_LOCK_KEY);
+  const ta = document.getElementById("firebase-config-json");
+  if (ta) ta.value = "";
+  setStatus("消去しました。");
+  if (window.unlockFirebaseConfigUI) window.unlockFirebaseConfigUI();
+};
+
+window.testFirebaseConnection = async () => {
+  const ok = await initFirebaseIfPossible(true);
+  if (!ok) return;
+  try {
+    await refreshAllFromFirestore();
+    setStatus("接続OK：ai_tools を読み込みました。");
+    if (window.lockFirebaseConfigUI) window.lockFirebaseConfigUI("connected");
+  } catch (e) {
+    setStatus("接続はOKですが、読み込みで失敗しました（権限/ルール確認）。");
+  }
+};
+
+async function initFirebaseIfPossible(verbose) {
+  const cfg = getStoredFirebaseConfig();
+  if (!cfg) {
+    if (verbose) setStatus("Firebase設定が未保存です。設定JSONを貼って保存してください。");
+    return false;
+  }
+  try {
+    if (!window.firebase || !window.firebase.initializeApp) {
+      if (verbose) setStatus("Firebase SDK読込に失敗しました。ネット接続を確認してください。");
+      return false;
     }
+    if (!firebase.apps || !firebase.apps.length) {
+      firebase.initializeApp(cfg);
+    }
+    db = firebase.firestore();
+    firebaseReady = true;
+    return true;
+  } catch (e) {
+    if (verbose) setStatus("初期化エラー：設定が違う可能性があります。");
+    return false;
+  }
 }
 
-document.getElementById('settings-trigger').addEventListener('click', () => {
-    openModal('settings-modal');
+async function loadAiToolsFromFirestore() {
+  if (!firebaseReady || !db) return null;
+  try {
+    const snap = await db.collection(FIRESTORE_COLLECTION_AI_TOOLS).get();
+    const list = [];
+    snap.forEach(doc => {
+      const raw = doc.data() || {};
+      const norm = normalizeTool(raw, doc.id);
+      list.push(norm);
+    });
+    list.sort((a,b) => {
+      const ra = (a.rank ?? 999999);
+      const rb = (b.rank ?? 999999);
+      if (ra !== rb) return ra - rb;
+      return safeStr(a.name).localeCompare(safeStr(b.name), "ja");
+    });
+    return list;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function loadPanelCollection(name, limit) {
+  if (!firebaseReady || !db) return null;
+  try {
+    let q = db.collection(name);
+    try { q = q.orderBy("published_at", "desc"); } catch (e) {}
+    if (limit) q = q.limit(limit);
+    const snap = await q.get();
+    const items = [];
+    snap.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+    return items;
+  } catch (e) {
+    return null;
+  }
+}
+
+const fallbackNews = [
+  { title:"OpenAI、GPT-5ベータ版リリース", time:"2時間前 (14:30)", url:"#", body:"（ダミー）ここに日本語化された本文が入ります。" },
+  { title:"Google、Gemini最新版発表", time:"5時間前 (11:30)", url:"#", body:"（ダミー）ここに日本語化された本文が入ります。" },
+  { title:"Claude最新モデル提供開始", time:"8時間前 (08:30)", url:"#", body:"（ダミー）ここに日本語化された本文が入ります。" },
+];
+
+const fallbackNewAI = [
+  { title:"Claude 5.0", meta:"🇺🇸 Anthropic", body:"500万トークン対応。最高レベルの安全性と性能。", url:"#", isNew:true },
+  { title:"Grok 2.5", meta:"🇺🇸 xAI", body:"リアルタイムX連携。ユーモアと正確性。", url:"#", isNew:true },
+  { title:"Gemini 4", meta:"🇺🇸 Google", body:"200万トークン。マルチモーダル強化。", url:"#", isNew:false },
+];
+
+function escapeHtml(str) {
+  return safeStr(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+window.openInfoModal = (kind, title, body, meta, url) => {
+  const m = document.getElementById("info-modal");
+  if (!m) return;
+  const t = document.getElementById("info-title");
+  const b = document.getElementById("info-body");
+  const me = document.getElementById("info-meta");
+  const u = document.getElementById("info-url");
+  if (t) t.textContent = kind + "：" + (title || "");
+  if (me) me.textContent = meta || "";
+  if (b) b.textContent = body || "(本文なし)";
+  if (u) {
+    u.href = url || "#";
+    u.style.display = url && url !== "#" ? "inline-block" : "none";
+  }
+  m.classList.add("show");
+};
+
+window.closeInfoModal = () => {
+  const m = document.getElementById("info-modal");
+  if (m) m.classList.remove("show");
+};
+
+function renderLeftPanel(items) {
+  const root = document.getElementById("left-panel-list");
+  if (!root) return;
+  const list = (items && items.length) ? items : fallbackNews;
+  root.innerHTML = list.map((x, idx) => {
+    const title = safeStr(x.title || x.headline || x.name || "");
+    const time = safeStr(x.time || x.published_text || x.published_at || "");
+    const url = safeStr(x.url || x.source_url || "#");
+    const body = safeStr(x.body || x.summary_ja || x.content_ja || x.summary || "");
+    const isNew = !!x.is_new || (idx < 2);
+    return `
+      <div class="news-item">
+        ${isNew ? '<span class="new-badge">NEW</span>' : ''}
+        <a href="#" onclick="window.openInfoModal('AIニュース', '${escapeHtml(title)}', '${escapeHtml(body)}', '${escapeHtml(time)}', '${escapeHtml(url)}'); return false;">${escapeHtml(title)}</a>
+        <div class="news-time">${escapeHtml(time)}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderRightPanel(items) {
+  const root = document.getElementById("right-panel-list");
+  if (!root) return;
+  const list = (items && items.length) ? items : fallbackNewAI;
+  root.innerHTML = list.map((x, idx) => {
+    const title = safeStr(x.title || x.name || "");
+    const meta = safeStr(x.meta || x.company || x.provider || x.country || "");
+    const body = safeStr(x.body || x.summary_ja || x.desc || x.short_description || "");
+    const url = safeStr(x.url || x.source_url || "#");
+    const isNew = !!x.is_new || !!x.new || (idx < 2);
+    return `
+      <div style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:10px; margin-bottom:12px;">
+        ${isNew ? '<span class="new-badge">NEW</span>' : ''}
+        <div style="font-weight:bold; font-size:0.8rem; margin-bottom:2px;">${escapeHtml(title)}</div>
+        <div style="font-size:0.65rem; color:#94a3b8; margin-bottom:3px;">${escapeHtml(meta)}</div>
+        <div style="font-size:0.65rem; color:#cbd5e1; line-height:1.2;">${escapeHtml(body)}</div>
+        <div style="margin-top:8px;">
+          <a href="#" class="btn btn-outline" style="display:inline-block; padding:6px 10px;" onclick="window.openInfoModal('新着AI', '${escapeHtml(title)}', '${escapeHtml(body)}', '${escapeHtml(meta)}', '${escapeHtml(url)}'); return false;">詳細</a>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function setTabCounts(allCount, featuredCount) {
+  try {
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      const tx = safeStr(btn.textContent).trim();
+      if (tx.startsWith("厳選版")) btn.textContent = "厳選版（" + featuredCount + "件）";
+      if (tx.startsWith("全リスト")) btn.textContent = "全リスト（" + allCount + "件）";
+    });
+  } catch(e) {}
+}
+
+window.switchTab = (tab) => {
+  currentTab = tab;
+  try {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-btn").forEach(b => {
+      const tx = safeStr(b.textContent).trim();
+      if (tx.startsWith(tab)) b.classList.add("active");
+    });
+  } catch(e) {}
+
+  const contentArea = document.getElementById("content-area");
+  if (!contentArea) return;
+
+  if (tab === "厳選版" || tab === "全リスト") {
+    contentArea.innerHTML = '<div id="ai-container" class="grid"></div>';
+    window.applyFilter();
+  } else if (tab === "選択基準") {
+    contentArea.innerHTML = `
+      <div style="max-width:1200px; margin:0 auto; padding:20px; background:#1e293b; border-radius:12px; line-height:1.8;">
+        <b>選択基準</b><br><br>
+        ・迷ったら：チャットAI → ChatGPT / Claude / Gemini<br>
+        ・調査：出典が必要 → Perplexity<br>
+        ・画像：Midjourney / FLUX / Firefly<br>
+        ・動画：Sora / Veo / Runway<br>
+        ・開発：Cursor / Copilot / Devin<br>
+        <br>
+        ※このタブはあとでMD全文（Firestore）に差し替え可能です。
+      </div>
+    `;
+  }
+};
+
+window.applyFilter = (cat = null) => {
+  if (cat) {
+    currentFilter = cat;
+    try {
+      document.querySelectorAll(".cat-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".cat-tab").forEach(t => {
+        if (safeStr(t.textContent).trim() === cat) t.classList.add("active");
+      });
+    } catch(e) {}
+  }
+
+  const searchEl = document.getElementById("search-input");
+  const word = searchEl ? safeStr(searchEl.value).toLowerCase() : "";
+
+  const base = allDocs && allDocs.length ? allDocs : masterListFallback.map(x => normalizeTool(x, x.name));
+  const allCount = base.length;
+  const featuredCount = base.filter(isFeatured).length;
+  setTabCounts(allCount, featuredCount);
+
+  let tabDocs = base;
+  if (currentTab === "厳選版") tabDocs = base.filter(isFeatured);
+
+  const filtered = tabDocs.filter(item => {
+    const matchWord = !word || (item._search && item._search.includes(word));
+    const matchCat = (currentFilter === "すべて") || (item.cat === currentFilter);
+    const showThisItem = (item.dark18 && showDarkAI) || (!item.dark18);
+    return matchWord && matchCat && showThisItem;
+  });
+
+  filtered.sort((a,b) => (a.rank||999999) - (b.rank||999999));
+  renderCards(filtered);
+};
+
+function renderCards(items) {
+  const container = document.getElementById("ai-container");
+  if (!container) return;
+
+  container.innerHTML = items.map(item => {
+    const stars = "★".repeat(item.rating || 0) + "☆".repeat(5 - (item.rating || 0));
+    const iconUrl = item.favicon_url || "";
+
+    return `
+      <div class="ai-card ${(item.rank||999999) <= 5 ? "top-rank" : ""} ${item.dark18 ? "dark-ai" : ""}">
+        <div class="card-star-box">${stars}</div>
+        <div class="tier-badge">${escapeHtml(item.tier)}</div>
+
+        <div class="card-top">
+          <img src="${escapeHtml(iconUrl)}" class="ai-icon" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2232%22 height=%2232%22 fill=%22%23ccc%22%3E%3Crect width=%2232%22 height=%2232%22/%3E%3C/svg%3E'">
+          <div class="ai-name-area">
+            <div class="ai-name">${escapeHtml(item.name)}</div>
+            <div class="ai-ver-hp">Ver: ${escapeHtml(item.version || "-")}</div>
+          </div>
+        </div>
+
+        <div class="card-company"><span>${escapeHtml(item.flag || "🌐")}</span> ${escapeHtml(item.company || "Unknown")}</div>
+
+        <div class="card-meta">
+          <span class="badge">${item.lang === "JP" ? "日本語OK" : "EN"}</span>
+          <span class="badge">${item.web ? "WEB" : ""} ${item.app ? "APP" : ""}</span>
+          <span class="badge">${escapeHtml(item.cat)}</span>
+        </div>
+
+        <div class="desc-box"><p class="ai-desc">${escapeHtml(item.desc)}</p></div>
+
+        <div class="expand-detail">
+          <p>${escapeHtml(item.detail || "")}</p>
+          ${item.dark18 ? '<p style="color:#ff5252; font-weight:bold;">⚠️ +18以上のコンテンツです。</p>' : ""}
+          <a href="${escapeHtml(item.login_url || "#")}" target="_blank" rel="noopener noreferrer" class="btn-login">サインイン</a>
+        </div>
+
+        <div class="btn-group">
+          <a href="${escapeHtml(item.url || "#")}" target="_blank" rel="noopener noreferrer" class="btn btn-primary">公式サイト</a>
+          <button class="btn btn-outline" onclick="this.closest('.ai-card').classList.toggle('expand'); return false;">詳細</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+window.showDark18Modal = () => {
+  const m = document.getElementById("dark18-modal");
+  if (m) m.classList.add("show");
+};
+window.closeDark18Modal = () => {
+  const m = document.getElementById("dark18-modal");
+  if (m) m.classList.remove("show");
+};
+window.confirmDark18 = () => {
+  showDarkAI = true;
+  window.closeDark18Modal();
+  window.applyFilter();
+};
+
+async function refreshAllFromFirestore() {
+  const list = await loadAiToolsFromFirestore();
+  if (list && list.length) {
+    allDocs = list;
+  } else {
+    allDocs = masterListFallback.map(x => normalizeTool(x, x.name));
+  }
+
+  const news = await loadPanelCollection(FIRESTORE_COLLECTION_NEWS, 10);
+  const newai = await loadPanelCollection(FIRESTORE_COLLECTION_NEWAI, 10);
+  renderLeftPanel(news);
+  renderRightPanel(newai);
+
+  window.applyFilter();
+}
+
+(function setupHiddenTap() {
+  let taps = 0;
+  let last = 0;
+  const target = document.getElementById("title-tap-target");
+  if (!target) return;
+  target.addEventListener("click", () => {
+    const t = Date.now();
+    if (t - last > 900) taps = 0;
+    last = t;
+    taps++;
+    if (taps >= 5) {
+      taps = 0;
+      document.getElementById("set").classList.toggle("show");
+    }
+  });
+})();
+
+document.addEventListener("DOMContentLoaded", async () => {
+  const cfg = getStoredFirebaseConfig();
+  const ta = document.getElementById("firebase-config-json");
+  if (ta && cfg) ta.value = JSON.stringify(cfg, null, 2);
+
+  renderLeftPanel(null);
+  renderRightPanel(null);
+
+  const searchInput = document.getElementById("search-input");
+  if (searchInput) searchInput.addEventListener("input", window.applyFilter);
+
+  const ok = await initFirebaseIfPossible(false);
+  if (ok) {
+    setStatus("Firebase設定あり：読み込み中…");
+    await refreshAllFromFirestore();
+    setStatus("Firestore: " + FIRESTORE_COLLECTION_AI_TOOLS + "=" + allDocs.length + "件 読込OK");
+  } else {
+    setStatus("Firebase未設定：表示は内蔵データ（仮）です。");
+    allDocs = masterListFallback.map(x => normalizeTool(x, x.name));
+    window.applyFilter();
+  }
 });
-    </script>
+</script>
 </body>
 </html>
